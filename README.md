@@ -9,9 +9,9 @@ The AWS AIOps covering GenAIOps and MLOps patterns involing SageMakerAI resource
 ```
 .
 ├── workshops/                               # Root folder for all workshops
-│   └── ...
+│   └── ...                                  # Specific workshop folders
 ├── examples/                                # Root folder for all examples
-│   └── ...
+│   └── ...                                  # Specific example folders
 ├── LICENSE                                  # The Repository MIT-0 License
 └── README.md                                # Root folder Repository documentation
 ```
