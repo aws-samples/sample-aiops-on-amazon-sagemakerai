@@ -8,8 +8,10 @@ The AWS AIOps covering GenAIOps and MLOps patterns involing SageMakerAI resource
 ### Repository Structure
 ```
 .
-├── workshops                                # Main folder for all workshops
-├── examples                                 # Main folder for all examples
+├── workshops/                               # Root folder for all workshops
+│   └── ...
+├── examples/                                # Root folder for all examples
+│   └── ...
 ├── LICENSE                                  # The Repository MIT-0 License
 └── README.md                                # Root folder Repository documentation
 ```
