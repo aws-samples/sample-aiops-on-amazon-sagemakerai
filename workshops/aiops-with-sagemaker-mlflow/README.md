@@ -9,14 +9,18 @@ By the end of this workshop, you'll be able to:
 - Understand and implement SageMakerAI managed MLFlow
 - Create and managed SageMakerAI managed MLFlow
 - SageMakerAI managed MLFlow configurations and considerations for Administrators
-- Operationzling GenAI Agents with SageMakerAI managed MLFlow
+- Operationalizing GenAI Agents with SageMakerAI managed MLFlow
 
 ### Workshop contents
-1. [Prerequisites](./prerequisites/)
-2. [AIOps Fundamentals](./fundamentals/)
-3. [SageMakerAI MLflow for Adminitrators](./administrators/)
-4. [Fine-tuning LLM](./finetuning/)
-5. [Operationzling Agents](./agents/)
+The workshop contains jupyter notebooks where each notebook covers important AIOps topic in depth.
+|Step|What|Notebook|
+|---|---|---|
+|1. |OSS MLflow fundamentals |[01-mlflow-fundamentals](01-mlflow-fundamentals.ipynb)|
+|2. |LLM fine-tuning with SageMaker managed MLflow |[03-sagemaker-fine-tuning](03-sagemaker-fine-tuning.ipynb)|
+|3. |Introduction to agent development with MLflow |[04-sagemaker-mlflow-agents-introduction](04-sagemaker-mlflow-agents-introduction.ipynb)|
+|4. |OSS MLflow Agent evaluation |[04-sagemaker-mlflow-agents-evaluation](04-sagemaker-mlflow-agents-evaluation.ipynb)|
+|5. |Amazon Bedrock agentCore integration with SageMaker managed MLflow |[04-sagemaker-mlflow-agentcore](04-sagemaker-mlflow-agentcore.ipynb)|
+|6. |Introduction to DSPy |[04-sagemaker-mlflow-dspy](04-sagemaker-mlflow-dspy.ipynb)|
 
 ### How to run the workshop
 
