@@ -20,7 +20,7 @@ The AWS AIOps covering GenAIOps and MLOps patterns involing SageMakerAI resource
 #### [AIOps with SageMakerAI Managed MLflow](./workshops/aiops-with-sagemaker-mlflow/)
 - Specialized technical workshop is designed for ML administrators, platform engineers, data scientists, ML engineers and DevOps engineers. seeking hands-on skills in managing and utilizing Amazon SageMakerAI managed MLflow. 
 - The course delves into essential topics such as administrating SageMaker managed MLFlow and example workloads. - Participants will also gain deep insights into MLflow constructs like experiments, models, prompts, SageMaker-MLflow integration, and tracing. 
-- Advanced segments will cover workloads like genai agents, and LLM Model training. The target audience are 
+- Advanced segments will cover workloads like genai agents, and LLM Model training.
 
 ### Examples
 #### [SageMaker Managed MLflow Observability for Strands Agents on Amazon Bedrock AgentCore](./examples/sagemaker-mlflow-agentcore-runtime/)
