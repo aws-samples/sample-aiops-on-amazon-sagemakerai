@@ -35,7 +35,7 @@ This example provides step-by-step instructions, sample code, and deployment jup
 }
 ```
 - Configure the AgentCore runtime IAM permission settings as shown in [AWS documentation](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-permissions.html)
-- To execute the sample code follow the notebook: [`deploy_strands_agents_on_agentcore_with_sagemaker_MLflow.ipynb`](/deploy_strands_agents_on_agentcore_with_sagemaker_MLflow.ipynb)
+- To execute the sample code follow the notebook provided in this repository: [`deploy_strands_agents_on_agentcore_with_sagemaker_MLflow.ipynb`](/deploy_strands_agents_on_agentcore_with_sagemaker_MLflow.ipynb)
 
 ## Cleanup
 Example cleanup commands and procedures to delete deployed agent, Cognito user pools, ECR repo, and runtime resources are provided in the notebook (see commented cleanup cells).
