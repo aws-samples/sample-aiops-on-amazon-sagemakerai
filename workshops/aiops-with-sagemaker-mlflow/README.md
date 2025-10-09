@@ -1,6 +1,6 @@
 # Workshop: AIOps with SageMakerAI Managed MLflow
 
-Welcome to the "AIOps with SageMakerAI Managed MLflow" workshop! The specialized technical workshop is designed for ML administrators and engineers seeking hands-on skills in managing and utilizing Amazon SageMakerAI managed MLflow. The course delves into essential topics such as administrating SageMaker managed MLFlow and example workloads. Participants will also gain deep insights into MLflow constructs like experiments, models, prompts, SageMaker-MLflow integration, and tracing. Advanced segments will cover workloads like genai agents, and LLM Model training. 
+Welcome to the "AIOps with SageMakerAI Managed MLflow" workshop! The specialized technical workshop is designed for platform administrators and ML engineers seeking hands-on skills in managing and utilizing Amazon SageMakerAI managed MLflow. The course delves into essential topics for administrating SageMaker AI managed MLFlow and AI/ML workloads with MLflow. Participants will gain deep insights into MLflow constructs like experiments, models, prompts, SageMaker-MLflow integrations. Advanced segments will cover AIML workloads using GenerativeAI agents, and Large-Language-Model training. 
 
 ### What You'll Learn
 
@@ -13,14 +13,14 @@ By the end of this workshop, you'll be able to:
 
 ### Workshop contents
 The workshop contains jupyter notebooks where each notebook covers important AIOps topic in depth.
-|Step|What|Notebook|
+|Step|What|Notebooks|
 |---|---|---|
 |1. |OSS MLflow fundamentals |[01-mlflow-fundamentals](01-mlflow-fundamentals.ipynb)|
-|2. |LLM fine-tuning with SageMaker managed MLflow |[03-sagemaker-fine-tuning](03-sagemaker-fine-tuning.ipynb)|
-|3. |Introduction to agent development with MLflow |[04-sagemaker-mlflow-agents-introduction](04-sagemaker-mlflow-agents-introduction.ipynb)|
-|4. |OSS MLflow Agent evaluation |[04-sagemaker-mlflow-agents-evaluation](04-sagemaker-mlflow-agents-evaluation.ipynb)|
-|5. |Amazon Bedrock agentCore integration with SageMaker managed MLflow |[04-sagemaker-mlflow-agentcore](04-sagemaker-mlflow-agentcore.ipynb)|
-|6. |Introduction to DSPy |[04-sagemaker-mlflow-dspy](04-sagemaker-mlflow-dspy.ipynb)|
+|2. |LLM fine-tuning with SageMaker managed MLflow |[02-sagemaker-fine-tuning](03-sagemaker-fine-tuning.ipynb)|
+|3. |Introduction to agent development with MLflow |[03-1-sagemaker-mlflow-agents-introduction.ipynb](03-1-sagemaker-mlflow-agents-introduction.ipynb)|
+|4. |OSS MLflow Agent evaluation |[03-2-sagemaker-mlflow-agents-evaluation.ipynb](03-2-sagemaker-mlflow-agents-evaluation.ipynb)|
+|5. |Amazon Bedrock agentCore integration with SageMaker managed MLflow |[03-3-sagemaker-mlflow-agentcore.ipynb](03-3-sagemaker-mlflow-agentcore.ipynb)|
+|6. |Introduction to DSPy |Coming soon...|
 
 ### How to run the workshop
 
