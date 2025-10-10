@@ -15,7 +15,7 @@ attrs==25.3.0
     #   cyclopts
     #   jsonschema
     #   referencing
-authlib==1.6.4
+authlib==1.6.5
     # via fastmcp
 autopep8==2.3.2
     # via bedrock-agentcore-starter-toolkit
