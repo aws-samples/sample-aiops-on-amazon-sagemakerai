@@ -16,10 +16,10 @@ The workshop contains jupyter notebooks where each notebook covers important AIO
 |Step|What|Notebooks|
 |---|---|---|
 |1. |OSS MLflow fundamentals |[01-mlflow-fundamentals](01-mlflow-fundamentals.ipynb)|
-|2. |LLM fine-tuning with SageMaker managed MLflow |[02-sagemaker-fine-tuning](03-sagemaker-fine-tuning.ipynb)|
-|3. |Introduction to agent development with MLflow |[03-1-sagemaker-mlflow-agents-introduction.ipynb](03-1-sagemaker-mlflow-agents-introduction.ipynb)|
-|4. |OSS MLflow Agent evaluation |[03-2-sagemaker-mlflow-agents-evaluation.ipynb](03-2-sagemaker-mlflow-agents-evaluation.ipynb)|
-|5. |Amazon Bedrock agentCore integration with SageMaker managed MLflow |[03-3-sagemaker-mlflow-agentcore.ipynb](03-3-sagemaker-mlflow-agentcore.ipynb)|
+|2. |Introduction to agent development with MLflow |[02-1-sagemaker-mlflow-agents-introduction.ipynb](02-1-sagemaker-mlflow-agents-introduction.ipynb)|
+|3. |OSS MLflow Agent evaluation |[02-2-sagemaker-mlflow-agents-evaluation.ipynb](02-2-sagemaker-mlflow-agents-evaluation.ipynb)|
+|4. |Amazon Bedrock agentCore integration with SageMaker managed MLflow |[02-3-sagemaker-mlflow-agentcore.ipynb](02-3-sagemaker-mlflow-agentcore.ipynb)|
+|5. |LLM fine-tuning with SageMaker managed MLflow |Coming soon...|
 |6. |Introduction to DSPy |Coming soon...|
 
 ### How to run the workshop
