@@ -40,12 +40,12 @@ def add_sagemaker_mlflow_s3_permissions(role_arn: str):
         )
         print(f"✓ Added SageMaker MLflow permissions to {role_name}")
         
-        # iam.put_role_policy(
-        #     RoleName=role_name,
-        #     PolicyName='S3FullAccessAgent',
-        #     PolicyDocument=json.dumps(s3_policy)
-        # )
-        # print(f"✓ Added S3 full access permissions to {role_name}")
+        iam.put_role_policy(
+            RoleName=role_name,
+            PolicyName='S3FullAccessAgent',
+            PolicyDocument=json.dumps(s3_policy)
+        )
+        print(f"✓ Added S3 full access permissions to {role_name}")
         
     except Exception as e:
         print(f"Error adding permissions: {e}")
