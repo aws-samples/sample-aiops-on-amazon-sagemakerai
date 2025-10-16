@@ -22,6 +22,16 @@ The workshop contains jupyter notebooks where each notebook covers important AIO
 |5. |LLM fine-tuning with SageMaker managed MLflow |Coming soon...|
 |6. |Introduction to DSPy |Coming soon...|
 
+### 🎓 Workshop stages 
+
+| Module | Duration | Level | Target Audience 👥 |
+|--------|----------|-------|-----------------|
+| 1. Setup | 10-15 mins | Basic | All participants preparing setup and environment access |
+| 2. AIOps Fundamentals | 30-40 mins | Intermediate | Data scientists, MLOps engineers, and AI practitioners new to MLflow concepts and AIOps practices |
+| 3. SageMakerAI managed MLflow for Administrators | 30-40 mins | Advanced | Platform administrators, engineering leads responsible for governance, cost optimization, and security |
+| 4. Operationalizing GenAI Agents | 50-70 mins | Advanced | ML Engineers, Data Scientists, Application developers |
+
+
 ### How to run the workshop
 
 This workshop follows a hands-on, self-paced format. Each module contains Jupyter notebooks that you'll run in your own JupyterLab environment (set up instructions provided in Module 0). The notebooks include:
