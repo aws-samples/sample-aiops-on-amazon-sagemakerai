@@ -41,6 +41,12 @@ This workshop follows a hands-on, self-paced format. Each module contains Jupyte
 - Exercises to reinforce your learning
 - Links to additional resources
 
+### AWS Workshop Studio
+The workshop is offered as part of [AWS Workshop Studio](https://catalog.us-east-1.prod.workshops.aws/workshops/ab4fc7a8-5885-4414-814d-28b443e7910e/en-US)and if you participating in an AWS Immersion Day or a similar instructor-led event workshop a fully conifugured AWS account is provided for you.
+
+### Prerequisites
+Follow the [workshop setup instruction](https://catalog.us-east-1.prod.workshops.aws/workshops/ab4fc7a8-5885-4414-814d-28b443e7910e/en-US/1-prerequisites) to get started for your environment.
+
 ### Disclaimers
 
 > This workshop is designed to run in the **us-east-1** (N. Virginia) region. Please ensure you are using this region throughout the workshop unless explicitly instructed otherwise.
