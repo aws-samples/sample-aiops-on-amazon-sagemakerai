@@ -26,7 +26,7 @@ The workshop contains jupyter notebooks where each notebook covers important AIO
 
 | Module | Duration | Level | Target Audience 👥 |
 |--------|----------|-------|-----------------|
-| 1. Setup | 10-15 mins | Basic | All participants preparing setup and environment access |
+| 1. Setup | 10-25 mins | Basic | All participants preparing setup and environment access |
 | 2. AIOps Fundamentals | 30-40 mins | Intermediate | Data scientists, MLOps engineers, and AI practitioners new to MLflow concepts and AIOps practices |
 | 3. SageMakerAI managed MLflow for Administrators | 30-40 mins | Advanced | Platform administrators, engineering leads responsible for governance, cost optimization, and security |
 | 4. Operationalizing GenAI Agents | 50-70 mins | Advanced | ML Engineers, Data Scientists, Application developers |
