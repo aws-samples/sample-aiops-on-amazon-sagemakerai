@@ -22,6 +22,12 @@ The AWS AIOps covering GenAIOps and MLOps patterns involing SageMakerAI resource
 - The course delves into essential topics such as administrating SageMaker managed MLFlow and example workloads. - Participants will also gain deep insights into MLflow constructs like experiments, models, prompts, SageMaker-MLflow integration, and tracing. 
 - Advanced segments will cover workloads like genai agents, and LLM Model training.
 
+### Operations
+#### [SageMaker MLflow Migration](./operations/sagemaker-mlflow-migration/)
+- Comprehensive guide for migrating MLflow data between different versions using SageMaker MLflow services.
+- Covers migration scenarios from MLflow v2.16 and v3.0 tracking servers to MLflow v3.4 apps.
+- Includes step-by-step notebooks for data setup, export, and import processes with sample MLflow objects (experiments, runs, traces, registered models, and version-specific features like prompts and logged models).
+
 ### Examples
 #### [SageMaker Managed MLflow Observability for Strands Agents on Amazon Bedrock AgentCore](./examples/sagemaker-mlflow-agentcore-runtime/)
 -  Example with step-by-step instructions and deployment jupyter notebook to integrate Strands Agents in Amazon Bedrock AgentCore Runtime with Amazon SageMaker managed MLflow for observability. 
