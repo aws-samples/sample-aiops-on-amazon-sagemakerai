@@ -296,7 +296,7 @@ py-openapi-schema-to-json-schema==0.0.3
     # via bedrock-agentcore-starter-toolkit
 pyarrow==21.0.0
     # via mlflow
-pyasn1==0.6.1
+pyasn1==0.6.2
     # via
     #   pyasn1-modules
     #   rsa
