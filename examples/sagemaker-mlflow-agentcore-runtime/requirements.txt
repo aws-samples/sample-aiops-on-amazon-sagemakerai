@@ -416,7 +416,7 @@ sqlalchemy==2.0.43
     # via
     #   alembic
     #   mlflow
-sqlparse==0.5.3
+sqlparse==0.5.4
     # via mlflow-skinny
 sse-starlette==3.0.2
     # via mcp
