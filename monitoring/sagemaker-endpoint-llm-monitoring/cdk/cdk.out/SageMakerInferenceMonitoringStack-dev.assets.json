@@ -1,7 +1,7 @@
 {
   "version": "36.0.0",
   "files": {
-    "439346fc92abf0085e40cfeda69cef2e71605719018f53382097b961809ec9dd": {
+    "dee8e560ceead5a36d0f328c71cd444b207160c0a3a78796c92c687377419120": {
       "source": {
         "path": "SageMakerInferenceMonitoringStack-dev.template.json",
         "packaging": "file"
@@ -9,7 +9,7 @@
       "destinations": {
         "736264693883-us-west-2": {
           "bucketName": "cdk-hnb659fds-assets-736264693883-us-west-2",
-          "objectKey": "439346fc92abf0085e40cfeda69cef2e71605719018f53382097b961809ec9dd.json",
+          "objectKey": "dee8e560ceead5a36d0f328c71cd444b207160c0a3a78796c92c687377419120.json",
           "region": "us-west-2",
           "assumeRoleArn": "arn:${AWS::Partition}:iam::736264693883:role/cdk-hnb659fds-file-publishing-role-736264693883-us-west-2"
         }

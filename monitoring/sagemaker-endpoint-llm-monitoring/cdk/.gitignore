@@ -3,7 +3,7 @@
 *.d.ts
 node_modules
 
-# Environment variables (contains secrets!)
+# Environment variables
 .env
 
 # CDK asset staging directory

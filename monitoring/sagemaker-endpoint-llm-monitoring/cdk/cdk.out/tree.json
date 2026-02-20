@@ -97,7 +97,9 @@
                               "Effect": "Allow",
                               "Resource": [
                                 "arn:aws:s3:::sagemaker-data-capture-2026-02-20-00-48-38",
-                                "arn:aws:s3:::sagemaker-data-capture-2026-02-20-00-48-38/*"
+                                "arn:aws:s3:::sagemaker-data-capture-2026-02-20-00-48-38/*",
+                                "arn:aws:s3:::sagemaker-us-west-2-736264693883",
+                                "arn:aws:s3:::sagemaker-us-west-2-736264693883/*"
                               ]
                             },
                             {
@@ -144,6 +146,14 @@
             },
             "constructInfo": {
               "fqn": "aws-cdk-lib.aws_iam.Role",
+              "version": "2.143.0"
+            }
+          },
+          "MLflowArtifactsBucket": {
+            "id": "MLflowArtifactsBucket",
+            "path": "SageMakerInferenceMonitoringStack-dev/MLflowArtifactsBucket",
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.aws_s3.BucketBase",
               "version": "2.143.0"
             }
           },

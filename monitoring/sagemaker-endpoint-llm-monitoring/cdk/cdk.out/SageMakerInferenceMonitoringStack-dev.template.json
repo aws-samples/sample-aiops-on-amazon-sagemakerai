@@ -58,7 +58,9 @@
        "Effect": "Allow",
        "Resource": [
         "arn:aws:s3:::sagemaker-data-capture-2026-02-20-00-48-38",
-        "arn:aws:s3:::sagemaker-data-capture-2026-02-20-00-48-38/*"
+        "arn:aws:s3:::sagemaker-data-capture-2026-02-20-00-48-38/*",
+        "arn:aws:s3:::sagemaker-us-west-2-736264693883",
+        "arn:aws:s3:::sagemaker-us-west-2-736264693883/*"
        ]
       },
       {
