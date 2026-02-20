@@ -1,0 +1,35 @@
+{
+  "version": "36.0.0",
+  "files": {
+    "71ebe1b0077733eeeb9f8139e3758591e3ef8b79aa7689e10ac7c34986960173": {
+      "source": {
+        "path": "SageMakerInferenceMonitoringStack.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "736264693883-us-west-2": {
+          "bucketName": "cdk-hnb659fds-assets-736264693883-us-west-2",
+          "objectKey": "71ebe1b0077733eeeb9f8139e3758591e3ef8b79aa7689e10ac7c34986960173.json",
+          "region": "us-west-2",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::736264693883:role/cdk-hnb659fds-file-publishing-role-736264693883-us-west-2"
+        }
+      }
+    }
+  },
+  "dockerImages": {
+    "fe13fb33e26f26da052c63f17806bd1b70a3dcdb822db4747d57700802fc1070": {
+      "source": {
+        "directory": "asset.fe13fb33e26f26da052c63f17806bd1b70a3dcdb822db4747d57700802fc1070",
+        "platform": "linux/amd64"
+      },
+      "destinations": {
+        "736264693883-us-west-2": {
+          "repositoryName": "cdk-hnb659fds-container-assets-736264693883-us-west-2",
+          "imageTag": "fe13fb33e26f26da052c63f17806bd1b70a3dcdb822db4747d57700802fc1070",
+          "region": "us-west-2",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::736264693883:role/cdk-hnb659fds-image-publishing-role-736264693883-us-west-2"
+        }
+      }
+    }
+  }
+}
