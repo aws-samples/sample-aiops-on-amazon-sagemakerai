@@ -3,13 +3,12 @@
 *.d.ts
 node_modules
 
-# Environment variables
+# Environment variables (contains secrets!)
 .env
 
 # CDK asset staging directory
 .cdk.staging
 cdk.out
-node_modules
 
 # Python
 __pycache__/
