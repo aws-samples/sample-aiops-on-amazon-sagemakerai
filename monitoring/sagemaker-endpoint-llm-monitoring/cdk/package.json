@@ -1,0 +1,40 @@
+{
+  "name": "sagemaker-inference-monitoring-cdk",
+  "version": "1.0.0",
+  "description": "CDK infrastructure for SageMaker endpoint monitoring with MLflow and GenAI evaluations",
+  "bin": {
+    "sagemaker-inference-monitoring-cdk": "bin/sagemaker-inference-monitoring-cdk.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "cdk": "cdk",
+    "deploy": "cdk deploy --require-approval never",
+    "destroy": "cdk destroy"
+  },
+  "keywords": [
+    "sagemaker",
+    "mlflow",
+    "monitoring",
+    "genai",
+    "step-functions"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "20.12.7",
+    "aws-cdk": "2.143.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.4.5"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "2.143.0",
+    "constructs": "^10.0.0",
+    "dotenv": "^16.4.5",
+    "source-map-support": "^0.5.21"
+  }
+}

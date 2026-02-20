@@ -1,0 +1,469 @@
+{
+ "Description": "Infrastructure for automated SageMaker endpoint monitoring with MLflow and GenAI evaluations",
+ "Resources": {
+  "ProcessorLambdaRole92D8FEC2": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "Description": "Role for Lambda function that processes SageMaker data capture files",
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ],
+    "RoleName": "sagemaker-data-capture-processing-dev"
+   },
+   "Metadata": {
+    "aws:cdk:path": "SageMakerInferenceMonitoringStack-dev/ProcessorLambdaRole/Resource"
+   }
+  },
+  "ProcessorLambdaRoleDefaultPolicyB4CFC09A": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "s3:Abort*",
+        "s3:DeleteObject*",
+        "s3:GetBucket*",
+        "s3:GetObject*",
+        "s3:List*",
+        "s3:PutObject",
+        "s3:PutObjectLegalHold",
+        "s3:PutObjectRetention",
+        "s3:PutObjectTagging",
+        "s3:PutObjectVersionTagging"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        "arn:aws:s3:::sagemaker-data-capture-2026-02-20-00-48-38",
+        "arn:aws:s3:::sagemaker-data-capture-2026-02-20-00-48-38/*"
+       ]
+      },
+      {
+       "Action": [
+        "sagemaker:CallMlflowAppApi",
+        "sagemaker:DescribeMlflowApp",
+        "sagemaker:ListMlflowApps"
+       ],
+       "Effect": "Allow",
+       "Resource": "arn:aws:sagemaker:us-west-2:736264693883:mlflow-app/app-ZLTLMHY2WXU4"
+      },
+      {
+       "Action": [
+        "bedrock:GetFoundationModel",
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream",
+        "bedrock:ListFoundationModels"
+       ],
+       "Effect": "Allow",
+       "Resource": "*"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "ProcessorLambdaRoleDefaultPolicyB4CFC09A",
+    "Roles": [
+     {
+      "Ref": "ProcessorLambdaRole92D8FEC2"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SageMakerInferenceMonitoringStack-dev/ProcessorLambdaRole/DefaultPolicy/Resource"
+   }
+  },
+  "ProcessorLambda71A929CE": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Architectures": [
+     "x86_64"
+    ],
+    "Code": {
+     "ImageUri": {
+      "Fn::Sub": "736264693883.dkr.ecr.us-west-2.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-736264693883-us-west-2:fe13fb33e26f26da052c63f17806bd1b70a3dcdb822db4747d57700802fc1070"
+     }
+    },
+    "Description": "Processes SageMaker data capture files and logs to MLflow with GenAI evaluations",
+    "Environment": {
+     "Variables": {
+      "MLFLOW_TRACKING_URI": "arn:aws:sagemaker:us-west-2:736264693883:mlflow-app/app-ZLTLMHY2WXU4",
+      "MLFLOW_EXPERIMENT_NAME": "llama-3-1-8b-instruct-2026-02-20-01-00-38",
+      "SAGEMAKER_ENDPOINT_NAME": "llama-3-1-8b-instruct-2026-02-20-01-00-38",
+      "BEDROCK_MODEL_ID": "bedrock:/global.anthropic.claude-sonnet-4-20250514-v1:0",
+      "DATA_CAPTURE_BUCKET": "sagemaker-data-capture-2026-02-20-00-48-38",
+      "AWS_ROLE_ARN": {
+       "Fn::GetAtt": [
+        "ProcessorLambdaRole92D8FEC2",
+        "Arn"
+       ]
+      }
+     }
+    },
+    "FunctionName": "sagemaker-data-capture-processor-dev",
+    "MemorySize": 3008,
+    "PackageType": "Image",
+    "Role": {
+     "Fn::GetAtt": [
+      "ProcessorLambdaRole92D8FEC2",
+      "Arn"
+     ]
+    },
+    "Timeout": 900
+   },
+   "DependsOn": [
+    "ProcessorLambdaRoleDefaultPolicyB4CFC09A",
+    "ProcessorLambdaRole92D8FEC2"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "SageMakerInferenceMonitoringStack-dev/ProcessorLambda/Resource",
+    "aws:asset:path": "asset.fe13fb33e26f26da052c63f17806bd1b70a3dcdb822db4747d57700802fc1070",
+    "aws:asset:dockerfile-path": "Dockerfile",
+    "aws:asset:property": "Code.ImageUri"
+   }
+  },
+  "StateMachineLogGroup15B91BCB": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": "/solution/sagemaker-endpoint-llm-monitoring-dev",
+    "RetentionInDays": 7
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "SageMakerInferenceMonitoringStack-dev/StateMachineLogGroup/Resource"
+   }
+  },
+  "MonitoringStateMachineRole64FB2633": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "states.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SageMakerInferenceMonitoringStack-dev/MonitoringStateMachine/Role/Resource"
+   }
+  },
+  "MonitoringStateMachineRoleDefaultPolicy22C1C742": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "lambda:InvokeFunction",
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "ProcessorLambda71A929CE",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "ProcessorLambda71A929CE",
+             "Arn"
+            ]
+           },
+           ":*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "logs:CreateLogDelivery",
+        "logs:DeleteLogDelivery",
+        "logs:DescribeLogGroups",
+        "logs:DescribeResourcePolicies",
+        "logs:GetLogDelivery",
+        "logs:ListLogDeliveries",
+        "logs:PutResourcePolicy",
+        "logs:UpdateLogDelivery",
+        "xray:GetSamplingRules",
+        "xray:GetSamplingTargets",
+        "xray:PutTelemetryRecords",
+        "xray:PutTraceSegments"
+       ],
+       "Effect": "Allow",
+       "Resource": "*"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "MonitoringStateMachineRoleDefaultPolicy22C1C742",
+    "Roles": [
+     {
+      "Ref": "MonitoringStateMachineRole64FB2633"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SageMakerInferenceMonitoringStack-dev/MonitoringStateMachine/Role/DefaultPolicy/Resource"
+   }
+  },
+  "MonitoringStateMachine66B5D5E9": {
+   "Type": "AWS::StepFunctions::StateMachine",
+   "Properties": {
+    "DefinitionString": {
+     "Fn::Join": [
+      "",
+      [
+       "{\"StartAt\":\"ProcessDataCaptureFile\",\"States\":{\"ProcessDataCaptureFile\":{\"End\":true,\"Retry\":[{\"ErrorEquals\":[\"Lambda.ClientExecutionTimeoutException\",\"Lambda.ServiceException\",\"Lambda.AWSLambdaException\",\"Lambda.SdkClientException\"],\"IntervalSeconds\":2,\"MaxAttempts\":6,\"BackoffRate\":2}],\"Type\":\"Task\",\"Resource\":\"arn:",
+       {
+        "Ref": "AWS::Partition"
+       },
+       ":states:::lambda:invoke\",\"Parameters\":{\"FunctionName\":\"",
+       {
+        "Fn::GetAtt": [
+         "ProcessorLambda71A929CE",
+         "Arn"
+        ]
+       },
+       "\",\"Payload\":{\"s3_bucket.$\":\"$.detail.bucket.name\",\"s3_key.$\":\"$.detail.object.key\"}}}},\"TimeoutSeconds\":3600}"
+      ]
+     ]
+    },
+    "LoggingConfiguration": {
+     "Destinations": [
+      {
+       "CloudWatchLogsLogGroup": {
+        "LogGroupArn": {
+         "Fn::GetAtt": [
+          "StateMachineLogGroup15B91BCB",
+          "Arn"
+         ]
+        }
+       }
+      }
+     ],
+     "Level": "ALL"
+    },
+    "RoleArn": {
+     "Fn::GetAtt": [
+      "MonitoringStateMachineRole64FB2633",
+      "Arn"
+     ]
+    },
+    "StateMachineName": "sagemaker-data-capture-monitoring-dev",
+    "TracingConfiguration": {
+     "Enabled": true
+    }
+   },
+   "DependsOn": [
+    "MonitoringStateMachineRoleDefaultPolicy22C1C742",
+    "MonitoringStateMachineRole64FB2633"
+   ],
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "SageMakerInferenceMonitoringStack-dev/MonitoringStateMachine/Resource"
+   }
+  },
+  "MonitoringStateMachineEventsRole64D4466C": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "events.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SageMakerInferenceMonitoringStack-dev/MonitoringStateMachine/EventsRole/Resource"
+   }
+  },
+  "MonitoringStateMachineEventsRoleDefaultPolicy48E56E35": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "states:StartExecution",
+       "Effect": "Allow",
+       "Resource": {
+        "Ref": "MonitoringStateMachine66B5D5E9"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "MonitoringStateMachineEventsRoleDefaultPolicy48E56E35",
+    "Roles": [
+     {
+      "Ref": "MonitoringStateMachineEventsRole64D4466C"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SageMakerInferenceMonitoringStack-dev/MonitoringStateMachine/EventsRole/DefaultPolicy/Resource"
+   }
+  },
+  "S3EventRuleD53D09BD": {
+   "Type": "AWS::Events::Rule",
+   "Properties": {
+    "EventPattern": {
+     "source": [
+      "aws.s3"
+     ],
+     "detail-type": [
+      "Object Created"
+     ],
+     "detail": {
+      "bucket": {
+       "name": [
+        "sagemaker-data-capture-2026-02-20-00-48-38"
+       ]
+      },
+      "object": {
+       "key": [
+        {
+         "suffix": ".jsonl"
+        }
+       ]
+      }
+     }
+    },
+    "Name": "sagemaker-s3-event-rule-dev",
+    "State": "ENABLED",
+    "Targets": [
+     {
+      "Arn": {
+       "Ref": "MonitoringStateMachine66B5D5E9"
+      },
+      "Id": "Target0",
+      "RoleArn": {
+       "Fn::GetAtt": [
+        "MonitoringStateMachineEventsRole64D4466C",
+        "Arn"
+       ]
+      }
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SageMakerInferenceMonitoringStack-dev/S3EventRule/Resource"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/1VP0W7CMAz8Ft5TD8p+YGzahMS0qXxAFYIpIWlSxU4RivLvU0OR2NOdfWedr4bV6xqWC3mlSh1NZfUB0p6lMkJeqU20hk1UBnkjCYWWPaTGWxTvJ1fw11utbtN4Z1lY2R+OEtKHVwbDtpcdfkanWHs32R48C1ShlUTIBE/et2kzadDg4EmzD7eSTYzDaT6mliUZgl3J2rrRGxTWdwRp57uv4OMwZT14/n9cCjJ+S3XWrlR5nrPAER0TpCbORaPFnEWD5GNQKMqLe5addt2k/0QeIhfnbMnC+SPChV7GegmrGurFhbSuQnSse4Tmjn998TzhfQEAAA=="
+   },
+   "Metadata": {
+    "aws:cdk:path": "SageMakerInferenceMonitoringStack-dev/CDKMetadata/Default"
+   }
+  }
+ },
+ "Outputs": {
+  "S3BucketEventBridgeNote": {
+   "Description": "Command to enable EventBridge notifications on S3 bucket",
+   "Value": "Please enable EventBridge notifications on bucket sagemaker-data-capture-2026-02-20-00-48-38 manually or via AWS CLI: aws s3api put-bucket-notification-configuration --bucket sagemaker-data-capture-2026-02-20-00-48-38 --notification-configuration '{\"EventBridgeConfiguration\": {}}'"
+  },
+  "ProcessorLambdaArn": {
+   "Description": "ARN of the Lambda function that processes data capture files",
+   "Value": {
+    "Fn::GetAtt": [
+     "ProcessorLambda71A929CE",
+     "Arn"
+    ]
+   },
+   "Export": {
+    "Name": "ProcessorLambdaArn-dev"
+   }
+  },
+  "StateMachineArn": {
+   "Description": "ARN of the Step Functions state machine",
+   "Value": {
+    "Ref": "MonitoringStateMachine66B5D5E9"
+   },
+   "Export": {
+    "Name": "StateMachineArn-dev"
+   }
+  },
+  "DataCaptureBucketName": {
+   "Description": "S3 bucket where data capture files are stored",
+   "Value": "sagemaker-data-capture-2026-02-20-00-48-38",
+   "Export": {
+    "Name": "DataCaptureBucketName-dev"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}
