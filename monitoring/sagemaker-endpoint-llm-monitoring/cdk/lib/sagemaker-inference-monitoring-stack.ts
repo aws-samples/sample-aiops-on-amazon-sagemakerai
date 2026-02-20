@@ -14,7 +14,7 @@ export interface SageMakerInferenceMonitoringStackProps extends cdk.StackProps {
    * Existing S3 bucket name where SageMaker data capture is stored
    * If not provided, will look for default SageMaker bucket
    */
-  dataCaptureS3BucketName?: string;
+  dataCaptureS3BucketName: string;
 
   /**
    * cdk stack prefix 
@@ -64,8 +64,7 @@ export class SageMakerInferenceMonitoringStack extends cdk.Stack {
     const stackPrefix = props.stackPrefix;
 
     // Reference existing S3 bucket where SageMaker data capture is stored
-    const dataCaptureS3BucketName = props.dataCaptureS3BucketName ||
-      `sagemaker-${this.region}-${this.account}`;
+    const dataCaptureS3BucketName = props.dataCaptureS3BucketName;
 
     const datCaptureBucket = s3.Bucket.fromBucketName(
       this,
@@ -85,6 +84,14 @@ export class SageMakerInferenceMonitoringStack extends cdk.Stack {
 
     // Grant Lambda access to S3 bucket for reading data capture files and writing MLflow trace artifacts
     datCaptureBucket.grantReadWrite(lambdaRole);
+    
+    // Grant Lambda access to default SageMaker bucket for MLflow trace artifacts
+    const defaultSageMakerBucket = s3.Bucket.fromBucketName(
+      this,
+      'MLflowArtifactsBucket',
+      `sagemaker-${this.region}-${this.account}`
+    );
+    defaultSageMakerBucket.grantReadWrite(lambdaRole);
 
     // Grant Lambda access to SageMaker MLflow App
     lambdaRole.addToPolicy(new iam.PolicyStatement({

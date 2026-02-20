@@ -28,6 +28,12 @@ if (!mlflowTrackingServerArn) {
   throw new Error('MLFLOW_TRACKING_URI is required. Please set it in .env file or as an environment variable.');
 }
 
+// REQUIRED: S3 bucket for data capture - must be provided
+const dataCaptureS3BucketName = process.env.DATA_CAPTURE_S3_BUCKET;
+if (!dataCaptureS3BucketName) {
+  throw new Error('DATA_CAPTURE_S3_BUCKET is required. Please set it in .env file or as an environment variable.');
+}
+
 // Configuration with smart defaults based on endpoint name
 const config = {
   env: {
@@ -44,9 +50,9 @@ const config = {
   // REQUIRED: CDK stack prefix for unique resource names
   stackPrefix,
 
-  // OPTIONAL: S3 bucket where data capture is stored
-  // Defaults to: sagemaker-{region}-{account}
-  dataCaptureS3BucketName: process.env.DATA_CAPTURE_S3_BUCKET,
+  // REQUIRED: S3 bucket where data capture is stored
+  dataCaptureS3BucketName,
+  
 
   // OPTIONAL: S3 prefix for data capture files
   // Defaults to: {endpoint-name}-data-capture/
