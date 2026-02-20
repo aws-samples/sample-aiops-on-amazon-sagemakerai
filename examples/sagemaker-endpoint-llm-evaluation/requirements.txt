@@ -1,0 +1,9 @@
+sagemaker==2.245.0
+mlflow==3.8.0
+sagemaker-mlflow==0.2.0
+datasets==4.5.0
+litellm==1.81.1
+ragas==0.4.3
+sacrebleu==2.6.0
+rouge_score==0.1.2
+deepeval==3.8.1
