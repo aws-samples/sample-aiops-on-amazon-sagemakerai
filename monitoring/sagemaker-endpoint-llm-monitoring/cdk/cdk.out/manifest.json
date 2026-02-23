@@ -1,0 +1,168 @@
+{
+  "version": "36.0.0",
+  "artifacts": {
+    "SageMakerInferenceMonitoringStack-dev.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "SageMakerInferenceMonitoringStack-dev.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "SageMakerInferenceMonitoringStack-dev": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://736264693883/us-west-2",
+      "properties": {
+        "templateFile": "SageMakerInferenceMonitoringStack-dev.template.json",
+        "terminationProtection": false,
+        "tags": {
+          "ManagedBy": "CDK",
+          "Project": "SageMaker-Inference-Monitoring"
+        },
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::736264693883:role/cdk-hnb659fds-deploy-role-736264693883-us-west-2",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::736264693883:role/cdk-hnb659fds-cfn-exec-role-736264693883-us-west-2",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-736264693883-us-west-2/dee8e560ceead5a36d0f328c71cd444b207160c0a3a78796c92c687377419120.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "SageMakerInferenceMonitoringStack-dev.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::736264693883:role/cdk-hnb659fds-lookup-role-736264693883-us-west-2",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "SageMakerInferenceMonitoringStack-dev.assets"
+      ],
+      "metadata": {
+        "/SageMakerInferenceMonitoringStack-dev": [
+          {
+            "type": "aws:cdk:stack-tags",
+            "data": [
+              {
+                "Key": "ManagedBy",
+                "Value": "CDK"
+              },
+              {
+                "Key": "Project",
+                "Value": "SageMaker-Inference-Monitoring"
+              }
+            ]
+          }
+        ],
+        "/SageMakerInferenceMonitoringStack-dev/ProcessorLambdaRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ProcessorLambdaRole92D8FEC2"
+          }
+        ],
+        "/SageMakerInferenceMonitoringStack-dev/ProcessorLambdaRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ProcessorLambdaRoleDefaultPolicyB4CFC09A"
+          }
+        ],
+        "/SageMakerInferenceMonitoringStack-dev/ProcessorLambda/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ProcessorLambda71A929CE"
+          }
+        ],
+        "/SageMakerInferenceMonitoringStack-dev/StateMachineLogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StateMachineLogGroup15B91BCB"
+          }
+        ],
+        "/SageMakerInferenceMonitoringStack-dev/MonitoringStateMachine/Role/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MonitoringStateMachineRole64FB2633"
+          }
+        ],
+        "/SageMakerInferenceMonitoringStack-dev/MonitoringStateMachine/Role/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MonitoringStateMachineRoleDefaultPolicy22C1C742"
+          }
+        ],
+        "/SageMakerInferenceMonitoringStack-dev/MonitoringStateMachine/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MonitoringStateMachine66B5D5E9"
+          }
+        ],
+        "/SageMakerInferenceMonitoringStack-dev/MonitoringStateMachine/EventsRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MonitoringStateMachineEventsRole64D4466C"
+          }
+        ],
+        "/SageMakerInferenceMonitoringStack-dev/MonitoringStateMachine/EventsRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MonitoringStateMachineEventsRoleDefaultPolicy48E56E35"
+          }
+        ],
+        "/SageMakerInferenceMonitoringStack-dev/S3EventRule/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "S3EventRuleD53D09BD"
+          }
+        ],
+        "/SageMakerInferenceMonitoringStack-dev/S3BucketEventBridgeNote": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "S3BucketEventBridgeNote"
+          }
+        ],
+        "/SageMakerInferenceMonitoringStack-dev/ProcessorLambdaArn": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ProcessorLambdaArn"
+          }
+        ],
+        "/SageMakerInferenceMonitoringStack-dev/StateMachineArn": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StateMachineArn"
+          }
+        ],
+        "/SageMakerInferenceMonitoringStack-dev/DataCaptureBucketName": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DataCaptureBucketName"
+          }
+        ],
+        "/SageMakerInferenceMonitoringStack-dev/CDKMetadata/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadata"
+          }
+        ],
+        "/SageMakerInferenceMonitoringStack-dev/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/SageMakerInferenceMonitoringStack-dev/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "SageMakerInferenceMonitoringStack-dev"
+    },
+    "Tree": {
+      "type": "cdk:tree",
+      "properties": {
+        "file": "tree.json"
+      }
+    }
+  }
+}
