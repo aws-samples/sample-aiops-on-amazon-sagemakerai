@@ -167,7 +167,7 @@ aws s3api put-bucket-notification-configuration \
 
 Once deployed, the system automatically monitors your SageMaker endpoint:
 
-1. **Inference Data Capture**: When SageMaker captures inference data to S3 (`.jsonl` files), EventBridge detects the new object. See example [sagemaker data capture .jsonl file here](./monitoring/sagemaker-endpoint-llm-monitoring/34-30-683-55126149-826d-415a-967b-33fa7f4666f3.jsonl).
+1. **Inference Data Capture**: When SageMaker captures inference data to S3 (`.jsonl` files), EventBridge detects the new object. See sample [sagemaker data capture .jsonl file here](.//34-30-683-55126149-826d-415a-967b-33fa7f4666f3.jsonl) for reference.
 
 2. **Automatic Processing**: Step Functions workflow is triggered and processes the JSONL file using Distributed Map.
 
@@ -186,6 +186,22 @@ Once deployed, the system automatically monitors your SageMaker endpoint:
 
 > See MLflow OSS [documentation](https://mlflow.org/docs/3.9.0/genai/eval-monitor/scorers/) for more MLflow supported metrics.
 
+### MLflow UI
+
+Access your MLflow experiment in SageMaker Studio to view the monitoring results:
+- All inference traces
+- Evaluation scores
+- Error rates
+- Performance metrics
+
+[sagemaker data capture inference trace](./images/mlflowtraceexpandedview.png)
+
+[sagemaker data capture Evaluation scores](./images/mlflowtracesWithEvals.png)
+
+[sagemaker data capture MLflowTraceCustomMetadata](./images/MLflowTraceCustomMetadata.png)
+
+[sagemaker data capture Error rate](./images/mlflow_trace_errorCode.png)
+
 5. **View Results**: Access MLflow App UI in SageMaker AI Studio to view traces and evaluation results.
 
 ## Other Logs
@@ -195,13 +211,6 @@ Once deployed, the system automatically monitors your SageMaker endpoint:
 - **Lambda Logs**: `/aws/lambda/SageMakerInferenceMonitoringStack-ProcessorLambda*`
 - **Step Functions Logs**: Check Step Functions console for execution history
 
-### MLflow UI
-
-Access your MLflow experiment in SageMaker Studio to view the monitoring results:
-- All inference traces
-- Evaluation scores
-- Error rates
-- Performance metrics
 
 ### Filter Traces
 
@@ -323,15 +332,13 @@ const mapState = new sfn.DistributedMap(this, 'ProcessDataCaptureRecords', {
 });
 ```
 
-## Costs
+## Costs structure
 
-Estimated costs (us-west-2 region):
-
-- **Lambda**: ~$0.0000166667 per GB-second (depends on execution time)
-- **Step Functions**: $0.025 per 1,000 state transitions
-- **S3**: Standard storage and request costs
-- **Bedrock**: Varies by model (Claude Sonnet 4: $3.00 per MTok input, $15.00 per MTok output)
-- **MLflow**: Included with SageMaker Studio
+- **Lambda**: Depends on execution time and requests. See [Lambda Function product pricing page for details](http://aws.amazon.com/lambda/pricing/)
+- **Step Functions**: Number of state transitions (https://aws.amazon.com/step-functions/pricing/)
+- **S3**: Standard storage and request costs. See [S3 pricing page for details](https://aws.amazon.com/s3/pricing/?nc=sn&loc=4)
+- **Bedrock**: Varies by model
+- **MLflow**: Included with SageMakerAI Studio
 
 **Cost optimization tips**:
 - Use sampling for evaluations (not all traces)
@@ -382,6 +389,15 @@ cdk destroy
 - [Step Functions Distributed Map with JSONL](https://aws.amazon.com/blogs/compute/introducing-jsonl-support-with-step-functions-distributed-map/)
 - [MLflow Documentation](https://mlflow.org/docs/3.9.0/genai/)
 - [AWS CDK Documentation](https://docs.aws.amazon.com/cdk/api/v2/)
+- [SageMaker MLflow Documentation](https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow.html)
+- [SageMaker Endpoint LLM evaluations](../../examples/sagemaker-endpoint-llm-evaluation/)
+- [SageMaker MLflow AgentCore Runtime](../sagemaker-mlflow-agentcore-runtime/) - Observability for Strands Agents
+
+### Evaluation Frameworks support in MLflow OSS
+
+- [MLflow OSS DeepEval Documentation](https://mlflow.org/docs/3.9.0/genai/eval-monitor/scorers/third-party/deepeval/)
+- [MLflow OSS RAGAS Documentation](https://mlflow.org/docs/3.9.0/genai/eval-monitor/scorers/third-party/ragas/)
+- [MLflow OSS Arize Phoenix](https://mlflow.org/docs/3.9.0/genai/eval-monitor/scorers/third-party/phoenix/)
 
 ## License
 
