@@ -194,13 +194,13 @@ Access your MLflow experiment in SageMaker Studio to view the monitoring results
 - Error rates
 - Performance metrics
 
-[sagemaker data capture inference trace](./images/mlflowtraceexpandedview.png)
+![sagemaker data capture inference trace](./images/mlflowtraceexpandedview.png)
 
-[sagemaker data capture Evaluation scores](./images/mlflowtracesWithEvals.png)
+![sagemaker data capture Evaluation scores](./images/mlflowtracesWithEvals.png)
 
-[sagemaker data capture MLflowTraceCustomMetadata](./images/MLflowTraceCustomMetadata.png)
+![sagemaker data capture MLflowTraceCustomMetadata](./images/MLflowTraceCustomMetadata.png)
 
-[sagemaker data capture Error rate](./images/mlflow_trace_errorCode.png)
+![sagemaker data capture Error rate](./images/mlflow_trace_errorCode.png)
 
 5. **View Results**: Access MLflow App UI in SageMaker AI Studio to view traces and evaluation results.
 
