@@ -1,0 +1,695 @@
+{
+  "version": "tree-0.1",
+  "tree": {
+    "id": "App",
+    "path": "",
+    "children": {
+      "SageMakerInferenceMonitoringStack-dev": {
+        "id": "SageMakerInferenceMonitoringStack-dev",
+        "path": "SageMakerInferenceMonitoringStack-dev",
+        "children": {
+          "DataCaptureBucket": {
+            "id": "DataCaptureBucket",
+            "path": "SageMakerInferenceMonitoringStack-dev/DataCaptureBucket",
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.aws_s3.BucketBase",
+              "version": "2.143.0"
+            }
+          },
+          "ProcessorLambdaRole": {
+            "id": "ProcessorLambdaRole",
+            "path": "SageMakerInferenceMonitoringStack-dev/ProcessorLambdaRole",
+            "children": {
+              "ImportProcessorLambdaRole": {
+                "id": "ImportProcessorLambdaRole",
+                "path": "SageMakerInferenceMonitoringStack-dev/ProcessorLambdaRole/ImportProcessorLambdaRole",
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.Resource",
+                  "version": "2.143.0"
+                }
+              },
+              "Resource": {
+                "id": "Resource",
+                "path": "SageMakerInferenceMonitoringStack-dev/ProcessorLambdaRole/Resource",
+                "attributes": {
+                  "aws:cdk:cloudformation:type": "AWS::IAM::Role",
+                  "aws:cdk:cloudformation:props": {
+                    "assumeRolePolicyDocument": {
+                      "Statement": [
+                        {
+                          "Action": "sts:AssumeRole",
+                          "Effect": "Allow",
+                          "Principal": {
+                            "Service": "lambda.amazonaws.com"
+                          }
+                        }
+                      ],
+                      "Version": "2012-10-17"
+                    },
+                    "description": "Role for Lambda function that processes SageMaker data capture files",
+                    "managedPolicyArns": [
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "arn:",
+                            {
+                              "Ref": "AWS::Partition"
+                            },
+                            ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+                          ]
+                        ]
+                      }
+                    ],
+                    "roleName": "sagemaker-data-capture-processing-dev"
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_iam.CfnRole",
+                  "version": "2.143.0"
+                }
+              },
+              "DefaultPolicy": {
+                "id": "DefaultPolicy",
+                "path": "SageMakerInferenceMonitoringStack-dev/ProcessorLambdaRole/DefaultPolicy",
+                "children": {
+                  "Resource": {
+                    "id": "Resource",
+                    "path": "SageMakerInferenceMonitoringStack-dev/ProcessorLambdaRole/DefaultPolicy/Resource",
+                    "attributes": {
+                      "aws:cdk:cloudformation:type": "AWS::IAM::Policy",
+                      "aws:cdk:cloudformation:props": {
+                        "policyDocument": {
+                          "Statement": [
+                            {
+                              "Action": [
+                                "s3:Abort*",
+                                "s3:DeleteObject*",
+                                "s3:GetBucket*",
+                                "s3:GetObject*",
+                                "s3:List*",
+                                "s3:PutObject",
+                                "s3:PutObjectLegalHold",
+                                "s3:PutObjectRetention",
+                                "s3:PutObjectTagging",
+                                "s3:PutObjectVersionTagging"
+                              ],
+                              "Effect": "Allow",
+                              "Resource": [
+                                "arn:aws:s3:::sagemaker-data-capture-2026-02-20-00-48-38",
+                                "arn:aws:s3:::sagemaker-data-capture-2026-02-20-00-48-38/*",
+                                "arn:aws:s3:::sagemaker-us-west-2-736264693883",
+                                "arn:aws:s3:::sagemaker-us-west-2-736264693883/*"
+                              ]
+                            },
+                            {
+                              "Action": [
+                                "sagemaker:CallMlflowAppApi",
+                                "sagemaker:DescribeMlflowApp",
+                                "sagemaker:ListMlflowApps"
+                              ],
+                              "Effect": "Allow",
+                              "Resource": "arn:aws:sagemaker:us-west-2:736264693883:mlflow-app/app-ZLTLMHY2WXU4"
+                            },
+                            {
+                              "Action": [
+                                "bedrock:GetFoundationModel",
+                                "bedrock:InvokeModel",
+                                "bedrock:InvokeModelWithResponseStream",
+                                "bedrock:ListFoundationModels"
+                              ],
+                              "Effect": "Allow",
+                              "Resource": "*"
+                            }
+                          ],
+                          "Version": "2012-10-17"
+                        },
+                        "policyName": "ProcessorLambdaRoleDefaultPolicyB4CFC09A",
+                        "roles": [
+                          {
+                            "Ref": "ProcessorLambdaRole92D8FEC2"
+                          }
+                        ]
+                      }
+                    },
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.aws_iam.CfnPolicy",
+                      "version": "2.143.0"
+                    }
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_iam.Policy",
+                  "version": "2.143.0"
+                }
+              }
+            },
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.aws_iam.Role",
+              "version": "2.143.0"
+            }
+          },
+          "MLflowArtifactsBucket": {
+            "id": "MLflowArtifactsBucket",
+            "path": "SageMakerInferenceMonitoringStack-dev/MLflowArtifactsBucket",
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.aws_s3.BucketBase",
+              "version": "2.143.0"
+            }
+          },
+          "ProcessorLambda": {
+            "id": "ProcessorLambda",
+            "path": "SageMakerInferenceMonitoringStack-dev/ProcessorLambda",
+            "children": {
+              "AssetImage": {
+                "id": "AssetImage",
+                "path": "SageMakerInferenceMonitoringStack-dev/ProcessorLambda/AssetImage",
+                "children": {
+                  "Staging": {
+                    "id": "Staging",
+                    "path": "SageMakerInferenceMonitoringStack-dev/ProcessorLambda/AssetImage/Staging",
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.AssetStaging",
+                      "version": "2.143.0"
+                    }
+                  },
+                  "Repository": {
+                    "id": "Repository",
+                    "path": "SageMakerInferenceMonitoringStack-dev/ProcessorLambda/AssetImage/Repository",
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.aws_ecr.RepositoryBase",
+                      "version": "2.143.0"
+                    }
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_ecr_assets.DockerImageAsset",
+                  "version": "2.143.0"
+                }
+              },
+              "Resource": {
+                "id": "Resource",
+                "path": "SageMakerInferenceMonitoringStack-dev/ProcessorLambda/Resource",
+                "attributes": {
+                  "aws:cdk:cloudformation:type": "AWS::Lambda::Function",
+                  "aws:cdk:cloudformation:props": {
+                    "architectures": [
+                      "x86_64"
+                    ],
+                    "code": {
+                      "imageUri": {
+                        "Fn::Sub": "736264693883.dkr.ecr.us-west-2.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-736264693883-us-west-2:fe13fb33e26f26da052c63f17806bd1b70a3dcdb822db4747d57700802fc1070"
+                      }
+                    },
+                    "description": "Processes SageMaker data capture files and logs to MLflow with GenAI evaluations",
+                    "environment": {
+                      "variables": {
+                        "MLFLOW_TRACKING_URI": "arn:aws:sagemaker:us-west-2:736264693883:mlflow-app/app-ZLTLMHY2WXU4",
+                        "MLFLOW_EXPERIMENT_NAME": "llama-3-1-8b-instruct-2026-02-20-01-00-38",
+                        "SAGEMAKER_ENDPOINT_NAME": "llama-3-1-8b-instruct-2026-02-20-01-00-38",
+                        "BEDROCK_MODEL_ID": "bedrock:/global.anthropic.claude-sonnet-4-20250514-v1:0",
+                        "DATA_CAPTURE_BUCKET": "sagemaker-data-capture-2026-02-20-00-48-38",
+                        "AWS_ROLE_ARN": {
+                          "Fn::GetAtt": [
+                            "ProcessorLambdaRole92D8FEC2",
+                            "Arn"
+                          ]
+                        }
+                      }
+                    },
+                    "functionName": "sagemaker-data-capture-processor-dev",
+                    "memorySize": 3008,
+                    "packageType": "Image",
+                    "role": {
+                      "Fn::GetAtt": [
+                        "ProcessorLambdaRole92D8FEC2",
+                        "Arn"
+                      ]
+                    },
+                    "timeout": 900
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_lambda.CfnFunction",
+                  "version": "2.143.0"
+                }
+              }
+            },
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.aws_lambda.DockerImageFunction",
+              "version": "2.143.0"
+            }
+          },
+          "ProcessDataCaptureFile": {
+            "id": "ProcessDataCaptureFile",
+            "path": "SageMakerInferenceMonitoringStack-dev/ProcessDataCaptureFile",
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.aws_stepfunctions_tasks.LambdaInvoke",
+              "version": "2.143.0"
+            }
+          },
+          "StateMachineLogGroup": {
+            "id": "StateMachineLogGroup",
+            "path": "SageMakerInferenceMonitoringStack-dev/StateMachineLogGroup",
+            "children": {
+              "Resource": {
+                "id": "Resource",
+                "path": "SageMakerInferenceMonitoringStack-dev/StateMachineLogGroup/Resource",
+                "attributes": {
+                  "aws:cdk:cloudformation:type": "AWS::Logs::LogGroup",
+                  "aws:cdk:cloudformation:props": {
+                    "logGroupName": "/solution/sagemaker-endpoint-llm-monitoring-dev",
+                    "retentionInDays": 7
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_logs.CfnLogGroup",
+                  "version": "2.143.0"
+                }
+              }
+            },
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.aws_logs.LogGroup",
+              "version": "2.143.0"
+            }
+          },
+          "MonitoringStateMachine": {
+            "id": "MonitoringStateMachine",
+            "path": "SageMakerInferenceMonitoringStack-dev/MonitoringStateMachine",
+            "children": {
+              "Role": {
+                "id": "Role",
+                "path": "SageMakerInferenceMonitoringStack-dev/MonitoringStateMachine/Role",
+                "children": {
+                  "ImportRole": {
+                    "id": "ImportRole",
+                    "path": "SageMakerInferenceMonitoringStack-dev/MonitoringStateMachine/Role/ImportRole",
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.Resource",
+                      "version": "2.143.0"
+                    }
+                  },
+                  "Resource": {
+                    "id": "Resource",
+                    "path": "SageMakerInferenceMonitoringStack-dev/MonitoringStateMachine/Role/Resource",
+                    "attributes": {
+                      "aws:cdk:cloudformation:type": "AWS::IAM::Role",
+                      "aws:cdk:cloudformation:props": {
+                        "assumeRolePolicyDocument": {
+                          "Statement": [
+                            {
+                              "Action": "sts:AssumeRole",
+                              "Effect": "Allow",
+                              "Principal": {
+                                "Service": "states.amazonaws.com"
+                              }
+                            }
+                          ],
+                          "Version": "2012-10-17"
+                        }
+                      }
+                    },
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.aws_iam.CfnRole",
+                      "version": "2.143.0"
+                    }
+                  },
+                  "DefaultPolicy": {
+                    "id": "DefaultPolicy",
+                    "path": "SageMakerInferenceMonitoringStack-dev/MonitoringStateMachine/Role/DefaultPolicy",
+                    "children": {
+                      "Resource": {
+                        "id": "Resource",
+                        "path": "SageMakerInferenceMonitoringStack-dev/MonitoringStateMachine/Role/DefaultPolicy/Resource",
+                        "attributes": {
+                          "aws:cdk:cloudformation:type": "AWS::IAM::Policy",
+                          "aws:cdk:cloudformation:props": {
+                            "policyDocument": {
+                              "Statement": [
+                                {
+                                  "Action": "lambda:InvokeFunction",
+                                  "Effect": "Allow",
+                                  "Resource": [
+                                    {
+                                      "Fn::GetAtt": [
+                                        "ProcessorLambda71A929CE",
+                                        "Arn"
+                                      ]
+                                    },
+                                    {
+                                      "Fn::Join": [
+                                        "",
+                                        [
+                                          {
+                                            "Fn::GetAtt": [
+                                              "ProcessorLambda71A929CE",
+                                              "Arn"
+                                            ]
+                                          },
+                                          ":*"
+                                        ]
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "Action": [
+                                    "logs:CreateLogDelivery",
+                                    "logs:DeleteLogDelivery",
+                                    "logs:DescribeLogGroups",
+                                    "logs:DescribeResourcePolicies",
+                                    "logs:GetLogDelivery",
+                                    "logs:ListLogDeliveries",
+                                    "logs:PutResourcePolicy",
+                                    "logs:UpdateLogDelivery",
+                                    "xray:GetSamplingRules",
+                                    "xray:GetSamplingTargets",
+                                    "xray:PutTelemetryRecords",
+                                    "xray:PutTraceSegments"
+                                  ],
+                                  "Effect": "Allow",
+                                  "Resource": "*"
+                                }
+                              ],
+                              "Version": "2012-10-17"
+                            },
+                            "policyName": "MonitoringStateMachineRoleDefaultPolicy22C1C742",
+                            "roles": [
+                              {
+                                "Ref": "MonitoringStateMachineRole64FB2633"
+                              }
+                            ]
+                          }
+                        },
+                        "constructInfo": {
+                          "fqn": "aws-cdk-lib.aws_iam.CfnPolicy",
+                          "version": "2.143.0"
+                        }
+                      }
+                    },
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.aws_iam.Policy",
+                      "version": "2.143.0"
+                    }
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_iam.Role",
+                  "version": "2.143.0"
+                }
+              },
+              "Resource": {
+                "id": "Resource",
+                "path": "SageMakerInferenceMonitoringStack-dev/MonitoringStateMachine/Resource",
+                "attributes": {
+                  "aws:cdk:cloudformation:type": "AWS::StepFunctions::StateMachine",
+                  "aws:cdk:cloudformation:props": {
+                    "definitionString": {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "{\"StartAt\":\"ProcessDataCaptureFile\",\"States\":{\"ProcessDataCaptureFile\":{\"End\":true,\"Retry\":[{\"ErrorEquals\":[\"Lambda.ClientExecutionTimeoutException\",\"Lambda.ServiceException\",\"Lambda.AWSLambdaException\",\"Lambda.SdkClientException\"],\"IntervalSeconds\":2,\"MaxAttempts\":6,\"BackoffRate\":2}],\"Type\":\"Task\",\"Resource\":\"arn:",
+                          {
+                            "Ref": "AWS::Partition"
+                          },
+                          ":states:::lambda:invoke\",\"Parameters\":{\"FunctionName\":\"",
+                          {
+                            "Fn::GetAtt": [
+                              "ProcessorLambda71A929CE",
+                              "Arn"
+                            ]
+                          },
+                          "\",\"Payload\":{\"s3_bucket.$\":\"$.detail.bucket.name\",\"s3_key.$\":\"$.detail.object.key\"}}}},\"TimeoutSeconds\":3600}"
+                        ]
+                      ]
+                    },
+                    "loggingConfiguration": {
+                      "destinations": [
+                        {
+                          "cloudWatchLogsLogGroup": {
+                            "logGroupArn": {
+                              "Fn::GetAtt": [
+                                "StateMachineLogGroup15B91BCB",
+                                "Arn"
+                              ]
+                            }
+                          }
+                        }
+                      ],
+                      "level": "ALL"
+                    },
+                    "roleArn": {
+                      "Fn::GetAtt": [
+                        "MonitoringStateMachineRole64FB2633",
+                        "Arn"
+                      ]
+                    },
+                    "stateMachineName": "sagemaker-data-capture-monitoring-dev",
+                    "tracingConfiguration": {
+                      "enabled": true
+                    }
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_stepfunctions.CfnStateMachine",
+                  "version": "2.143.0"
+                }
+              },
+              "EventsRole": {
+                "id": "EventsRole",
+                "path": "SageMakerInferenceMonitoringStack-dev/MonitoringStateMachine/EventsRole",
+                "children": {
+                  "ImportEventsRole": {
+                    "id": "ImportEventsRole",
+                    "path": "SageMakerInferenceMonitoringStack-dev/MonitoringStateMachine/EventsRole/ImportEventsRole",
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.Resource",
+                      "version": "2.143.0"
+                    }
+                  },
+                  "Resource": {
+                    "id": "Resource",
+                    "path": "SageMakerInferenceMonitoringStack-dev/MonitoringStateMachine/EventsRole/Resource",
+                    "attributes": {
+                      "aws:cdk:cloudformation:type": "AWS::IAM::Role",
+                      "aws:cdk:cloudformation:props": {
+                        "assumeRolePolicyDocument": {
+                          "Statement": [
+                            {
+                              "Action": "sts:AssumeRole",
+                              "Effect": "Allow",
+                              "Principal": {
+                                "Service": "events.amazonaws.com"
+                              }
+                            }
+                          ],
+                          "Version": "2012-10-17"
+                        }
+                      }
+                    },
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.aws_iam.CfnRole",
+                      "version": "2.143.0"
+                    }
+                  },
+                  "DefaultPolicy": {
+                    "id": "DefaultPolicy",
+                    "path": "SageMakerInferenceMonitoringStack-dev/MonitoringStateMachine/EventsRole/DefaultPolicy",
+                    "children": {
+                      "Resource": {
+                        "id": "Resource",
+                        "path": "SageMakerInferenceMonitoringStack-dev/MonitoringStateMachine/EventsRole/DefaultPolicy/Resource",
+                        "attributes": {
+                          "aws:cdk:cloudformation:type": "AWS::IAM::Policy",
+                          "aws:cdk:cloudformation:props": {
+                            "policyDocument": {
+                              "Statement": [
+                                {
+                                  "Action": "states:StartExecution",
+                                  "Effect": "Allow",
+                                  "Resource": {
+                                    "Ref": "MonitoringStateMachine66B5D5E9"
+                                  }
+                                }
+                              ],
+                              "Version": "2012-10-17"
+                            },
+                            "policyName": "MonitoringStateMachineEventsRoleDefaultPolicy48E56E35",
+                            "roles": [
+                              {
+                                "Ref": "MonitoringStateMachineEventsRole64D4466C"
+                              }
+                            ]
+                          }
+                        },
+                        "constructInfo": {
+                          "fqn": "aws-cdk-lib.aws_iam.CfnPolicy",
+                          "version": "2.143.0"
+                        }
+                      }
+                    },
+                    "constructInfo": {
+                      "fqn": "aws-cdk-lib.aws_iam.Policy",
+                      "version": "2.143.0"
+                    }
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_iam.Role",
+                  "version": "2.143.0"
+                }
+              }
+            },
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.aws_stepfunctions.StateMachine",
+              "version": "2.143.0"
+            }
+          },
+          "S3EventRule": {
+            "id": "S3EventRule",
+            "path": "SageMakerInferenceMonitoringStack-dev/S3EventRule",
+            "children": {
+              "Resource": {
+                "id": "Resource",
+                "path": "SageMakerInferenceMonitoringStack-dev/S3EventRule/Resource",
+                "attributes": {
+                  "aws:cdk:cloudformation:type": "AWS::Events::Rule",
+                  "aws:cdk:cloudformation:props": {
+                    "eventPattern": {
+                      "source": [
+                        "aws.s3"
+                      ],
+                      "detail-type": [
+                        "Object Created"
+                      ],
+                      "detail": {
+                        "bucket": {
+                          "name": [
+                            "sagemaker-data-capture-2026-02-20-00-48-38"
+                          ]
+                        },
+                        "object": {
+                          "key": [
+                            {
+                              "suffix": ".jsonl"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "name": "sagemaker-s3-event-rule-dev",
+                    "state": "ENABLED",
+                    "targets": [
+                      {
+                        "id": "Target0",
+                        "arn": {
+                          "Ref": "MonitoringStateMachine66B5D5E9"
+                        },
+                        "roleArn": {
+                          "Fn::GetAtt": [
+                            "MonitoringStateMachineEventsRole64D4466C",
+                            "Arn"
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                },
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.aws_events.CfnRule",
+                  "version": "2.143.0"
+                }
+              }
+            },
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.aws_events.Rule",
+              "version": "2.143.0"
+            }
+          },
+          "S3BucketEventBridgeNote": {
+            "id": "S3BucketEventBridgeNote",
+            "path": "SageMakerInferenceMonitoringStack-dev/S3BucketEventBridgeNote",
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.CfnOutput",
+              "version": "2.143.0"
+            }
+          },
+          "ProcessorLambdaArn": {
+            "id": "ProcessorLambdaArn",
+            "path": "SageMakerInferenceMonitoringStack-dev/ProcessorLambdaArn",
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.CfnOutput",
+              "version": "2.143.0"
+            }
+          },
+          "StateMachineArn": {
+            "id": "StateMachineArn",
+            "path": "SageMakerInferenceMonitoringStack-dev/StateMachineArn",
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.CfnOutput",
+              "version": "2.143.0"
+            }
+          },
+          "DataCaptureBucketName": {
+            "id": "DataCaptureBucketName",
+            "path": "SageMakerInferenceMonitoringStack-dev/DataCaptureBucketName",
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.CfnOutput",
+              "version": "2.143.0"
+            }
+          },
+          "CDKMetadata": {
+            "id": "CDKMetadata",
+            "path": "SageMakerInferenceMonitoringStack-dev/CDKMetadata",
+            "children": {
+              "Default": {
+                "id": "Default",
+                "path": "SageMakerInferenceMonitoringStack-dev/CDKMetadata/Default",
+                "constructInfo": {
+                  "fqn": "aws-cdk-lib.CfnResource",
+                  "version": "2.143.0"
+                }
+              }
+            },
+            "constructInfo": {
+              "fqn": "constructs.Construct",
+              "version": "10.5.0"
+            }
+          },
+          "BootstrapVersion": {
+            "id": "BootstrapVersion",
+            "path": "SageMakerInferenceMonitoringStack-dev/BootstrapVersion",
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.CfnParameter",
+              "version": "2.143.0"
+            }
+          },
+          "CheckBootstrapVersion": {
+            "id": "CheckBootstrapVersion",
+            "path": "SageMakerInferenceMonitoringStack-dev/CheckBootstrapVersion",
+            "constructInfo": {
+              "fqn": "aws-cdk-lib.CfnRule",
+              "version": "2.143.0"
+            }
+          }
+        },
+        "constructInfo": {
+          "fqn": "aws-cdk-lib.Stack",
+          "version": "2.143.0"
+        }
+      },
+      "Tree": {
+        "id": "Tree",
+        "path": "Tree",
+        "constructInfo": {
+          "fqn": "constructs.Construct",
+          "version": "10.5.0"
+        }
+      }
+    },
+    "constructInfo": {
+      "fqn": "aws-cdk-lib.App",
+      "version": "2.143.0"
+    }
+  }
+}
