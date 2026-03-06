@@ -199,7 +199,7 @@ mcp==1.14.1
     #   strands-agents
 mdurl==0.1.2
     # via markdown-it-py
-mlflow==3.4.0
+mlflow==3.5.0
     # via
     #   strands-agentcore-sagemaker-mlflow (pyproject.toml)
     #   sagemaker-mlflow
