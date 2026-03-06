@@ -286,7 +286,7 @@ prompt-toolkit==3.0.52
     # via
     #   bedrock-agentcore-starter-toolkit
     #   questionary
-protobuf==6.32.1
+protobuf==6.33.5
     # via
     #   mlflow-skinny
     #   mlflow-tracing
