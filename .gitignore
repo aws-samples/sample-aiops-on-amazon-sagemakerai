@@ -16,6 +16,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+
+# Large data files — upload to S3 via src/setup/upload_data_to_s3.py
+monitoring/automated-drift-monitoring-evidently/data/*.csv
 .Python
 build/
 develop-eggs/
@@ -45,3 +48,6 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db
+
+# Downloaded icons cache (for diagram generation)
+monitoring/automated-drift-monitoring-evidently/docs/icons/
