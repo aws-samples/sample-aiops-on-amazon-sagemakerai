@@ -303,12 +303,13 @@ automated-drift-monitoring-evidently/
 │   │   ├── aws_utils.py                      # AWS session and role utilities
 │   │   ├── mlflow_utils.py                   # MLflow tracking helpers
 │   │   └── visualization_utils.py            # Chart generation for MLflow
-│   └── analytics/
-│       └── setup_quicksight_monitoring.py    # QuickSight dashboard setup
+│   └── governance/
+│       └── setup_quicksight_governance.py    # QuickSight governance dashboard setup
 ├── notebooks/
 │   ├── pipeline_execution.ipynb              # Interactive pipeline control notebook
 │   ├── inference_monitoring.ipynb            # Monitoring & drift detection notebook
-│   └── inference_monitoring_with_pipeline.ipynb # Pipeline-based automated drift monitoring with Evidently
+│   ├── inference_monitoring_with_pipeline.ipynb # Pipeline-based automated drift monitoring with Evidently
+│   └── governance_dashboard.ipynb            # QuickSight governance dashboard setup
 ├── data/
 │   ├── creditcard_predictions_final.csv      # Training data (284K rows, 30 features)
 │   ├── creditcard_ground_truth.csv           # Ground truth labels
@@ -322,6 +323,7 @@ automated-drift-monitoring-evidently/
 │       ├── inference_monitoring_diagram_excalidraw.png # Excalidraw export
 │       ├── mermaid-diagram-mlflow-evidently.png # MLflow + Evidently monitoring flow
 │       └── screenshots/                      # SageMaker Studio screenshots
+│           └── Quicksight-Governance-dashboard.pdf  # QuickSight governance dashboard
 ├── main.py                                   # CLI entry point
 ├── .env.example                              # Environment template
 └── README.md                                 # This file
@@ -2327,6 +2329,7 @@ The entire PoC is driven by **three notebooks** in SageMaker Studio. Each notebo
 | **`pipeline_execution.ipynb`** | Training, evaluation, model registration, endpoint deployment | Cells 1-5 |
 | **`inference_monitoring.ipynb`** | Inference testing, ground truth, drift detection, CloudWatch alarms | Cells 1-40 |
 | **`inference_monitoring_with_pipeline.ipynb`** | Pipeline-based automated monitoring: creates a SageMaker Pipeline (`fraud-detection-monitoring-pipeline`) with steps for ground truth simulation, drift computation, MLflow logging, Athena writes, threshold checks, and alarm creation | Cells 1-end |
+| **`governance_dashboard.ipynb`** | QuickSight governance dashboard: creates Athena data source, dataset, analysis with 6 visuals, and published dashboard — all via API | Cells 1-11 |
 
 **Workflow:**
 
@@ -2342,6 +2345,40 @@ The entire PoC is driven by **three notebooks** in SageMaker Studio. Each notebo
 `inference_monitoring_with_pipeline.ipynb` wraps steps 3-5 into a single SageMaker Pipeline (`fraud-detection-monitoring-pipeline`) with automated steps: SimulateGroundTruth → ComputeDrift → LogToMLflow → WriteToAthena → CheckThresholds → CreateAlarms. Use this for scheduled, hands-off monitoring.
 
 **All in SageMaker Studio — no CLI needed for development workflow.**
+
+---
+
+### Inference Monitoring with SageMaker Pipeline
+
+`notebooks/inference_monitoring_with_pipeline.ipynb` sets up inference monitoring as a fully automated SageMaker Pipeline instead of running individual notebook cells manually.
+
+**What it does:**
+- Creates a 6-step SageMaker Pipeline: SimulateGroundTruth → ComputeDrift → LogToMLflow → WriteToAthena → CheckThresholds → CreateAlarms
+- Auto-resolves the MLflow run ID and model version from the MLflow Model Registry (no hardcoded run IDs)
+- Queries monitoring results from Athena and visualizes drift trends over time
+- Configures EventBridge scheduling for daily automated execution (Section 11) — creates the IAM role, rule, and wires the pipeline as a direct EventBridge target using `SageMakerPipelineParameters`
+
+**Key sections:**
+1. Setup — auto-resolves model version from MLflow Model Registry (prefers Production stage)
+2. Pipeline creation and execution with configurable thresholds
+3. Athena result queries and drift trend visualization
+4. EventBridge scheduling for daily hands-off monitoring (no Lambda intermediary)
+
+### Governance Dashboard (QuickSight)
+
+`notebooks/governance_dashboard.ipynb` programmatically creates a complete QuickSight governance dashboard — no manual UI steps required.
+
+**What it creates (all via QuickSight Definition API):**
+- Athena data source pointing to the `fraud_detection` database
+- Dataset from `inference_responses` table with calculated fields (`prediction_accuracy`, `risk_tier`)
+- Analysis with 6 visuals: prediction volume over time, fraud probability distribution, prediction accuracy breakdown (donut), risk tier distribution, inference latency trend, and total inferences KPI
+- Published dashboard with filtering and CSV export enabled
+
+**Prerequisites:** QuickSight Enterprise subscription, data in `inference_responses` Athena table, IAM permissions for QuickSight/Athena/S3.
+
+**QuickSight Governance Dashboard:**
+
+> 📄 [View Governance Dashboard (PDF)](docs/guides/screenshots/Quicksight-Governance-dashboard.pdf)
 
 ## Cost Optimization
 
