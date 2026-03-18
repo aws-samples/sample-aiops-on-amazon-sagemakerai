@@ -241,21 +241,17 @@ This solution addresses a critical gap: **lack of production-ready inference mon
 ## Project Structure
 
 ```
-pure-storage-mlflow/
+automated-drift-monitoring-evidently/
 ├── src/
-│   ├── sagemaker/
-│   │   ├── sg_pipeline.py                    # Complete pipeline definition
-│   │   ├── sg_inference_handler.py           # Custom inference handler with Athena logging
-│   │   ├── sg_config.py                      # Configuration constants
-│   │   ├── sg_deploy.py                      # Manual model deployment (with custom handler)
-│   │   ├── sg_train.py                       # Manual training script
-│   │   ├── sg_test_endpoint.py               # Endpoint testing with analytics
-│   │   ├── sg_batch_transform.py             # Batch transform for bulk scoring
-│   │   ├── sg_pipeline_cli.py                # Pipeline CLI commands
+│   ├── pipeline/
+│   │   ├── pipeline.py                       # Complete pipeline definition
+│   │   ├── inference_handler.py              # Custom inference handler with Athena logging
+│   │   ├── deploy.py                         # Manual model deployment (with custom handler)
+│   │   ├── train.py                          # Manual training script
+│   │   ├── test_endpoint.py                  # Endpoint testing with analytics
+│   │   ├── batch_transform.py                # Batch transform for bulk scoring
+│   │   ├── pipeline_cli.py                   # Pipeline CLI commands
 │   │   ├── inference_requirements.txt        # Custom handler dependencies (awswrangler)
-│   │   ├── requirements.txt                  # General SageMaker dependencies
-│   │   ├── pipeline_execution.ipynb          # Interactive pipeline control notebook
-│   │   ├── inference_monitoring.ipynb        # Monitoring & drift detection notebook
 │   │   ├── pipeline_steps/
 │   │   │   ├── preprocessing.py              # Data preprocessing (ScriptProcessor)
 │   │   │   ├── preprocessing_pyspark.py      # PySpark preprocessing alternative
@@ -270,37 +266,49 @@ pure-storage-mlflow/
 │   │   │   ├── requirements_train.txt        # Training step dependencies
 │   │   │   ├── requirements_evaluation.txt   # Evaluation step dependencies
 │   │   │   └── requirements_preprocessing.txt # Preprocessing step dependencies
-│   │   ├── athena/
-│   │   │   ├── athena_client.py              # Athena query operations
-│   │   │   ├── athena_client_pyspark.py      # PySpark Athena integration
-│   │   │   ├── data_migrator.py              # CSV → Athena Iceberg migration
-│   │   │   ├── iceberg_manager.py            # Iceberg table management
-│   │   │   └── schema_definitions.py         # Table schema definitions
-│   │   └── utils/
-│   │       └── aws_session.py                # AWS session helpers
-│   ├── scripts/
+│   │   └── athena/
+│   │       ├── athena_client.py              # Athena query operations
+│   │       ├── athena_client_pyspark.py      # PySpark Athena integration
+│   │       ├── data_migrator.py              # CSV → Athena Iceberg migration
+│   │       ├── iceberg_manager.py            # Iceberg table management
+│   │       └── schema_definitions.py         # Table schema definitions
+│   ├── config/
+│   │   ├── config.py                         # Configuration constants
+│   │   └── config.yaml                       # Central configuration
+│   ├── monitoring/
+│   │   ├── monitor_model_performance.py      # Performance monitoring & alerts
+│   │   ├── lambda_drift_monitor.py           # Drift monitoring infrastructure
+│   │   ├── lambda_inference_logger.py        # SQS-to-Athena inference log consumption
+│   │   ├── generate_drift_dataset.py         # Generate drifted test data
+│   │   ├── simulate_ground_truth_from_athena.py # Ground truth simulator (dev/test)
+│   │   ├── generate_ground_truth_confirmations.py # Generate test confirmations
+│   │   └── update_ground_truth.py            # Merge ground truth into inference records
+│   ├── setup/
 │   │   ├── setup_athena_tables.py            # Create Athena DB and tables
 │   │   ├── setup_inference_logging.py        # SQS + Lambda inference logging
 │   │   ├── setup_drift_monitoring.py         # Drift monitoring infrastructure
 │   │   ├── setup_scheduled_inference.py      # EventBridge scheduled inference
 │   │   ├── setup_scheduled_batch_transform.py # Scheduled batch transform
-│   │   ├── simulate_ground_truth_from_athena.py # Ground truth simulator (dev/test)
-│   │   ├── generate_ground_truth_confirmations.py # Generate test confirmations
-│   │   ├── update_ground_truth.py            # Merge ground truth into inference records
-│   │   ├── monitor_model_performance.py      # Performance monitoring & alerts
 │   │   ├── create_or_update_sagemaker_role.py # IAM role setup
 │   │   ├── create_lambda_role.py             # Lambda execution role
-│   │   └── generate_drift_dataset.py         # Generate drifted test data
-│   └── utils/
-│       ├── aws_utils.py                      # AWS session and role utilities
-│       ├── mlflow_utils.py                   # MLflow tracking helpers
-│       └── visualization_utils.py            # Chart generation for MLflow
+│   │   └── deploy_drift_monitoring.sh        # CI/CD deployment script
+│   ├── utils/
+│   │   ├── aws_session.py                    # AWS session helpers
+│   │   ├── aws_utils.py                      # AWS session and role utilities
+│   │   ├── mlflow_utils.py                   # MLflow tracking helpers
+│   │   └── visualization_utils.py            # Chart generation for MLflow
+│   └── analytics/
+│       └── setup_quicksight_monitoring.py    # QuickSight dashboard setup
+├── notebooks/
+│   ├── pipeline_execution.ipynb              # Interactive pipeline control notebook
+│   └── inference_monitoring.ipynb            # Monitoring & drift detection notebook
 ├── data/
 │   ├── creditcard_predictions_final.csv      # Training data (284K rows, 30 features)
 │   ├── creditcard_ground_truth.csv           # Ground truth labels
 │   └── creditcard_drifted.csv                # Drifted data for testing
-├── sg_main.py                                # CLI entry point
-├── main.py                                   # Main entry point
+├── docs/
+│   └── guides/                               # Architecture diagrams and screenshots
+├── main.py                                   # CLI entry point
 ├── .env.example                              # Environment template
 └── README.md                                 # This file
 ```
@@ -326,7 +334,7 @@ cp .env.example .env
 ```bash
 # MLflow - Use ARN format for programmatic access
 MLFLOW_TRACKING_URI=arn:aws:sagemaker:us-east-1:YOUR_ACCOUNT:mlflow-app/app-YOUR_ID
-MLFLOW_EXPERIMENT_NAME=sg-credit-card-fraud-detection-training
+MLFLOW_EXPERIMENT_NAME=credit-card-fraud-detection-training
 MLFLOW_MODEL_NAME=xgboost-fraud-detector
 
 # AWS
@@ -377,7 +385,7 @@ json
 
 ```bash
 # Create S3 bucket, Athena database, Iceberg tables, and migrate CSV data
-python sg_main.py setup --migrate-data
+python main.py setup --migrate-data
 
 # Setup IAM roles with required permissions
 python scripts/create_or_update_sagemaker_role.py - Not used
@@ -513,7 +521,7 @@ The `CloudWatchLogsFullAccess` managed policy only covers Logs. To publish custo
 
 ### Setup SQS + Lambda
 ```
-uv run sg_main.py setup-logging
+uv run main.py setup-logging
 ```
 
 Update the SQS_URL in .env with the created SQS queue.
@@ -536,13 +544,13 @@ src/sagemaker/pipeline_execution.ipynb
 
 ```bash
 # Create pipeline
-python sg_main.py pipeline create --pipeline-name fraud-detection-pipeline
+python main.py pipeline create --pipeline-name fraud-detection-pipeline
 
 # Execute pipeline
-python sg_main.py pipeline start --pipeline-name fraud-detection-pipeline --wait
+python main.py pipeline start --pipeline-name fraud-detection-pipeline --wait
 
 # Check status
-python sg_main.py pipeline status --pipeline-name fraud-detection-pipeline
+python main.py pipeline status --pipeline-name fraud-detection-pipeline
 ```
 
 ### Test Inference & Monitoring
@@ -552,7 +560,7 @@ python sg_main.py pipeline status --pipeline-name fraud-detection-pipeline
 # src/sagemaker/inference_monitoring.ipynb
 
 # 2. Run inference tests
-# uv run sg_main.py test --endpoint-name fraud-detector-v22 --num-samples 50
+# uv run main.py test --endpoint-name fraud-detector-v22 --num-samples 50
 
 # 3. Simulate ground truth (for development/testing)
 python scripts/simulate_ground_truth_from_athena.py --accuracy 0.85
@@ -735,10 +743,10 @@ SageMaker Studio > Deployments > Endpoints > Fraud Detector Endpoint > Playgroun
 
 - **Inference Handler (SQS):** `src/sagemaker/pipeline_steps/inference.py` — sends each prediction to SQS
 - **Lambda Consumer:** `lambda_inference_logger.py` — reads SQS batches, writes to Athena
-- **Setup Script:** `src/scripts/setup_inference_logging.py` — creates SQS queue + Lambda + event source mapping
-- **Legacy Handler (Direct Athena):** `src/sagemaker/sg_inference_handler.py` — buffered awswrangler writes (alternative)
-- **Dependencies:** `src/sagemaker/inference_requirements.txt`
-- **Pipeline Integration:** `src/sagemaker/sg_pipeline.py`
+- **Setup Script:** `src/setup/setup_inference_logging.py` — creates SQS queue + Lambda + event source mapping
+- **Legacy Handler (Direct Athena):** `src/pipeline/inference_handler.py` — buffered awswrangler writes (alternative)
+- **Dependencies:** `src/pipeline/inference_requirements.txt`
+- **Pipeline Integration:** `src/pipeline/pipeline.py`
 
 **How it works (SQS path):**
 ```python
@@ -783,7 +791,7 @@ result = pipeline_builder.upsert_pipeline(
 
 **Via CLI:**
 ```bash
-python sg_main.py pipeline create --pipeline-name fraud-detection-pipeline
+python main.py pipeline create --pipeline-name fraud-detection-pipeline
 ```
 
 ### Execute Pipeline
@@ -798,10 +806,10 @@ execution.wait(delay=60, max_attempts=30)
 **Via CLI:**
 ```bash
 # With waiting
-python sg_main.py pipeline start --pipeline-name fraud-detection-pipeline --wait
+python main.py pipeline start --pipeline-name fraud-detection-pipeline --wait
 
 # Without waiting (monitor in console)
-python sg_main.py pipeline start --pipeline-name fraud-detection-pipeline
+python main.py pipeline start --pipeline-name fraud-detection-pipeline
 ```
 
 ### Monitor Execution
@@ -814,10 +822,10 @@ SageMaker → Pipelines → fraud-detection-pipeline → Executions
 **CLI:**
 ```bash
 # Get latest execution status
-python sg_main.py pipeline status --pipeline-name fraud-detection-pipeline
+python main.py pipeline status --pipeline-name fraud-detection-pipeline
 
 # List all executions
-python sg_main.py pipeline list-executions --pipeline-name fraud-detection-pipeline
+python main.py pipeline list-executions --pipeline-name fraud-detection-pipeline
 ```
 
 **Expected Duration:** ~25 minutes
@@ -871,9 +879,9 @@ with mlflow.start_run():
 ```
 
 **Experiments:**
-- `sg-credit-card-fraud-detection-training` - Training runs
-- `sg-credit-card-fraud-detection-inference` - Inference monitoring
-- `sg-credit-card-fraud-detection-batch` - Batch transform jobs
+- `credit-card-fraud-detection-training` - Training runs
+- `credit-card-fraud-detection-inference` - Inference monitoring
+- `credit-card-fraud-detection-batch` - Batch transform jobs
 
 ### Model Registry
 
@@ -1164,7 +1172,7 @@ EVIDENTLY_CAT_STAT_TEST=chi_square
 
 **Configuration in Code:**
 ```python
-# src/sagemaker/sg_config.py (lines 202-210)
+# src/config/config.py (lines 202-210)
 EVIDENTLY_NUM_STAT_TEST = os.getenv('EVIDENTLY_NUM_STAT_TEST', 'ks')
 KS_DRIFT_THRESHOLD = float(os.getenv('KS_DRIFT_THRESHOLD', '0.1'))
 KS_PVALUE_THRESHOLD = float(os.getenv('KS_PVALUE_THRESHOLD', '0.05'))
@@ -1260,7 +1268,7 @@ EVIDENTLY_DRIFT_THRESHOLD=0.2    # Overall drift threshold
 9. Drift Summary Dashboard - 4-panel overview of drift metrics
 10. Model Performance Comparison - Training vs inference metrics
 
-All charts are logged to MLflow experiment: `sg-credit-card-fraud-detection-monitoring`
+All charts are logged to MLflow experiment: `credit-card-fraud-detection-monitoring`
 
 ## Visualizations Quick Reference
 
@@ -1292,8 +1300,8 @@ All charts are logged to MLflow experiment: `sg-credit-card-fraud-detection-moni
 ```
 1. Open MLflow UI (SageMaker Studio → Partner AI Apps)
 2. Select experiment:
-   - Training: sg-credit-card-fraud-detection-training
-   - Monitoring: sg-credit-card-fraud-detection-monitoring
+   - Training: credit-card-fraud-detection-training
+   - Monitoring: credit-card-fraud-detection-monitoring
 3. Click on run
 4. Scroll to "Artifacts" section
 5. Charts available as PNG files:
@@ -1313,7 +1321,7 @@ Drift detection compares current inference feature distributions against a **bas
 baseline_df = pd.read_csv(CSV_TRAINING_DATA)
 ```
 
-This loads the CSV file directly from disk. Since the same data has already been migrated to the Athena `training_data` table (via `sg_main.py setup --migrate-data`), the baseline can alternatively be loaded from Athena using PySpark or boto3:
+This loads the CSV file directly from disk. Since the same data has already been migrated to the Athena `training_data` table (via `main.py setup --migrate-data`), the baseline can alternatively be loaded from Athena using PySpark or boto3:
 
 **Option 1: PySpark (for large-scale processing):**
 ```python
@@ -1808,10 +1816,10 @@ Your model expects these exact 30 features in JSON format:
 
 ```bash
 # Create all infrastructure (S3, Athena DB, tables)
-python sg_main.py setup --migrate-data
+python main.py setup --migrate-data
 
 # Just create infrastructure (no data migration)
-python sg_main.py setup
+python main.py setup
 
 # Migrate CSV data to Athena
 python scripts/migrate_data_to_athena.py --table training_data
@@ -1821,22 +1829,22 @@ python scripts/migrate_data_to_athena.py --table training_data
 
 ```bash
 # Create pipeline
-python sg_main.py pipeline create --pipeline-name fraud-detection-pipeline
+python main.py pipeline create --pipeline-name fraud-detection-pipeline
 
 # Update existing pipeline
-python sg_main.py pipeline update --pipeline-name fraud-detection-pipeline
+python main.py pipeline update --pipeline-name fraud-detection-pipeline
 
 # Start execution
-python sg_main.py pipeline start --pipeline-name fraud-detection-pipeline [--wait]
+python main.py pipeline start --pipeline-name fraud-detection-pipeline [--wait]
 
 # Get status
-python sg_main.py pipeline status --pipeline-name fraud-detection-pipeline
+python main.py pipeline status --pipeline-name fraud-detection-pipeline
 
 # List executions
-python sg_main.py pipeline list-executions --pipeline-name fraud-detection-pipeline
+python main.py pipeline list-executions --pipeline-name fraud-detection-pipeline
 
 # Delete pipeline
-python sg_main.py pipeline delete --pipeline-name fraud-detection-pipeline
+python main.py pipeline delete --pipeline-name fraud-detection-pipeline
 ```
 
 ### Ground Truth & Monitoring
@@ -1884,7 +1892,7 @@ InvalidRequestException: Unable to verify/create output bucket fraud-detection-d
    ```
 3. Create bucket if missing:
    ```bash
-   python sg_main.py setup
+   python main.py setup
    ```
 
 ---
@@ -1911,7 +1919,7 @@ FileNotFoundError: [Errno 2] No such file or directory: 'awswrangler'
 **Solution:**
 1. Verify `inference_requirements.txt` exists:
    ```bash
-   cat src/sagemaker/inference_requirements.txt
+   cat src/pipeline/inference_requirements.txt
    ```
 2. Should contain:
    ```
@@ -1967,7 +1975,7 @@ ModuleNotFoundError: No module named 'sagemaker_mlflow'
 **Solution:**
 1. Check training step has dependencies configured:
    ```python
-   # In sg_pipeline.py training step
+   # In pipeline.py training step
    dependencies=['pipeline_steps/requirements_train.txt']
    ```
 2. Verify `requirements_train.txt` contains:
@@ -2099,7 +2107,7 @@ SYNTAX_ERROR: line 1:8: Column 'cnt' cannot be resolved
 
 ```bash
 # One-time setup
-python sg_main.py setup --migrate-data
+python main.py setup --migrate-data
 python scripts/create_or_update_sagemaker_role.py
 python scripts/create_lambda_role.py
 ```
@@ -2125,8 +2133,8 @@ src/sagemaker/pipeline_execution.ipynb
 **Option B: CLI**
 
 ```bash
-python sg_main.py pipeline create --pipeline-name fraud-detection-pipeline
-python sg_main.py pipeline start --pipeline-name fraud-detection-pipeline --wait
+python main.py pipeline create --pipeline-name fraud-detection-pipeline
+python main.py pipeline start --pipeline-name fraud-detection-pipeline --wait
 ```
 
 **Result:**
@@ -2245,8 +2253,8 @@ python scripts/monitor_model_performance.py --days 30
 # In SageMaker Studio:
 # 1. Left sidebar → Partner AI Apps → MLflow
 # 2. Select experiments:
-#    - sg-credit-card-fraud-detection-training (training runs)
-#    - sg-credit-card-fraud-detection-inference (monitoring runs)
+#    - credit-card-fraud-detection-training (training runs)
+#    - credit-card-fraud-detection-inference (monitoring runs)
 # 3. View charts in Artifacts section
 ```
 
@@ -2265,7 +2273,7 @@ python scripts/monitor_model_performance.py --days 30
 # Cell 5: Re-run pipeline execution
 
 # Option B: Via CLI
-python sg_main.py pipeline start --pipeline-name fraud-detection-pipeline --wait
+python main.py pipeline start --pipeline-name fraud-detection-pipeline --wait
 ```
 
 **Result:**
@@ -2383,7 +2391,7 @@ python scripts/monitor_model_performance.py --days 7
 
 # 3. Redeploy with previous model version
 #    Update pipeline to use previous run_id
-python sg_main.py pipeline start --pipeline-name fraud-detection-pipeline
+python main.py pipeline start --pipeline-name fraud-detection-pipeline
 ```
 
 ## Next Steps
@@ -2394,11 +2402,11 @@ Each notebook cell has a direct CLI equivalent. For CI/CD pipelines, replace not
 
 | Phase | Notebook Cell | CLI Command |
 |-------|--------------|-------------|
-| Infrastructure | `pipeline_execution.ipynb` Cell 3 | `python sg_main.py setup --migrate-data` |
-| SQS + Lambda | `pipeline_execution.ipynb` Cell 3 | `python sg_main.py setup-logging` |
-| Create Pipeline | `pipeline_execution.ipynb` Cell 4 | `python sg_main.py pipeline create --pipeline-name fraud-detection-pipeline` |
-| Train & Deploy | `pipeline_execution.ipynb` Cell 5 | `python sg_main.py pipeline start --pipeline-name fraud-detection-pipeline --wait` |
-| Test Inference | `inference_monitoring.ipynb` Cells 6-9 | `python sg_main.py test --endpoint-name fraud-detector-endpoint --num-samples 100` |
+| Infrastructure | `pipeline_execution.ipynb` Cell 3 | `python main.py setup --migrate-data` |
+| SQS + Lambda | `pipeline_execution.ipynb` Cell 3 | `python main.py setup-logging` |
+| Create Pipeline | `pipeline_execution.ipynb` Cell 4 | `python main.py pipeline create --pipeline-name fraud-detection-pipeline` |
+| Train & Deploy | `pipeline_execution.ipynb` Cell 5 | `python main.py pipeline start --pipeline-name fraud-detection-pipeline --wait` |
+| Test Inference | `inference_monitoring.ipynb` Cells 6-9 | `python main.py test --endpoint-name fraud-detector-endpoint --num-samples 100` |
 | Simulate Ground Truth | `inference_monitoring.ipynb` Cell 19 | `python scripts/simulate_ground_truth_from_athena.py --accuracy 0.85` |
 | Apply Ground Truth | `inference_monitoring.ipynb` Cell 24 | `python scripts/update_ground_truth.py --mode batch` |
 | Monitor Drift | `inference_monitoring.ipynb` Cells 26-39 | `python scripts/monitor_model_performance.py --days 30` |
