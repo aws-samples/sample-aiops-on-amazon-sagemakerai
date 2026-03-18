@@ -227,7 +227,7 @@ CSV_DRIFTED_DATA: Path = _PROJECT_ROOT / _get(
 )
 
 # S3 data paths — pipeline and Athena code should use these
-_s3_data_base = f"s3://{DATA_S3_BUCKET}/{S3_PREFIX}data" if DATA_S3_BUCKET else ""
+_s3_data_base = f"s3://{DATA_S3_BUCKET}/{DATA_S3_PREFIX}data" if DATA_S3_BUCKET else ""
 
 S3_TRAINING_DATA: str = _get(
     "data", "s3_training_data", "S3_TRAINING_DATA",

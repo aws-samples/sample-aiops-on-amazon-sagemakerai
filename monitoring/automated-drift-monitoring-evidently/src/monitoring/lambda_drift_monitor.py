@@ -2,8 +2,9 @@
 Lambda function for automated drift detection and alerting.
 
 Triggered by EventBridge on a schedule (e.g., daily).
-Checks for data drift and model drift, sends SNS alerts if thresholds exceeded.
-Logs all metrics and visualizations to MLflow for tracking.
+Uses Evidently for data drift and model performance analysis.
+Sends SNS alerts if thresholds exceeded.
+Logs all metrics and Evidently HTML reports to MLflow for tracking.
 """
 
 import json
@@ -11,19 +12,21 @@ import os
 import boto3
 import time
 from datetime import datetime, timedelta
-import io
 import tempfile
 
-# MLflow and visualization
+import numpy as np
+import pandas as pd
+
+# Evidently-based reporting (used by check_data_drift / check_model_drift)
+from src.monitoring.evidently_reports import run_data_drift_report, run_classification_report
+
+# MLflow
 try:
     import mlflow
-    import matplotlib
-    matplotlib.use('Agg')  # Non-interactive backend for Lambda
-    import matplotlib.pyplot as plt
     MLFLOW_AVAILABLE = True
 except ImportError:
     MLFLOW_AVAILABLE = False
-    print("⚠️ MLflow or matplotlib not available - skipping MLflow logging")
+    print("⚠️ MLflow not available - skipping MLflow logging")
 
 # AWS clients
 athena = boto3.client('athena')
@@ -32,13 +35,13 @@ sns = boto3.client('sns')
 
 # Configuration from environment variables
 ATHENA_DATABASE = os.getenv('ATHENA_DATABASE', 'fraud_detection')
-ATHENA_OUTPUT_S3 = os.getenv('ATHENA_OUTPUT_S3', 's3://fraud-detection-data-lake-skoppar/athena-query-results/')
+ATHENA_OUTPUT_S3 = os.getenv('ATHENA_OUTPUT_S3', 's3://fraud-detection-data-lake/athena-query-results/')
 SNS_TOPIC_ARN = os.getenv('SNS_TOPIC_ARN')
 MLFLOW_TRACKING_URI = os.getenv('MLFLOW_TRACKING_URI')
 
 # Thresholds
 DATA_DRIFT_THRESHOLD = float(os.getenv('DATA_DRIFT_THRESHOLD', '0.2'))  # PSI threshold
-KS_PVALUE_THRESHOLD = float(os.getenv('KS_PVALUE_THRESHOLD', '0.05'))  # KS p-value threshold (95% confidence)
+KS_PVALUE_THRESHOLD = float(os.getenv('KS_PVALUE_THRESHOLD', '0.05'))  # KS p-value threshold
 MODEL_DRIFT_THRESHOLD = float(os.getenv('MODEL_DRIFT_THRESHOLD', '0.05'))  # 5% degradation
 MIN_SAMPLES = int(os.getenv('MIN_SAMPLES', '100'))  # Minimum samples for analysis
 
@@ -94,10 +97,22 @@ def execute_athena_query(sql, wait=True):
     return list(reader)
 
 
-def calculate_psi(baseline_values, current_values, bins=10):
-    """Calculate Population Stability Index (PSI)."""
-    import numpy as np
+# =========================================================================
+# Legacy statistical functions (kept for reference)
+#
+# These demonstrate how to compute PSI and KS drift statistics explicitly
+# without Evidently. The active Lambda flow now uses Evidently's
+# DataDriftPreset and ClassificationPreset via evidently_reports.py.
+# =========================================================================
 
+def calculate_psi(baseline_values, current_values, bins=10):
+    """Calculate Population Stability Index (PSI).
+
+    LEGACY — This is the manual implementation of PSI using numpy.
+    Kept to show what it takes to compute PSI without Evidently.
+    The active drift check now delegates to ``run_data_drift_report()``
+    which uses Evidently's DataDriftPreset internally.
+    """
     baseline_values = np.array(baseline_values, dtype=float)
     current_values = np.array(current_values, dtype=float)
 
@@ -125,12 +140,18 @@ def calculate_psi(baseline_values, current_values, bins=10):
 
 
 def calculate_ks_statistic(baseline_values, current_values):
-    """
-    Calculate Kolmogorov-Smirnov test statistic.
+    """Calculate Kolmogorov-Smirnov test statistic.
 
-    The KS test measures the maximum distance between the cumulative distribution
-    functions (CDFs) of two samples. It's particularly sensitive to changes in
-    distribution tails, making it ideal for fraud detection.
+    LEGACY — This is the manual implementation of the two-sample KS test
+    using scipy.stats. Kept to show what it takes to compute KS without
+    Evidently. The active drift check now delegates to
+    ``run_data_drift_report()`` which uses Evidently's DataDriftPreset
+    (which includes KS as one of its statistical tests).
+
+    The KS test measures the maximum distance between the cumulative
+    distribution functions (CDFs) of two samples. It's particularly
+    sensitive to changes in distribution tails, making it ideal for
+    fraud detection.
 
     Args:
         baseline_values: List of baseline (training) values
@@ -140,14 +161,8 @@ def calculate_ks_statistic(baseline_values, current_values):
         tuple: (ks_statistic, p_value)
             - ks_statistic: 0-1 (0 = identical, 1 = completely different)
             - p_value: Probability that difference is random (< 0.05 = significant)
-
-    Example:
-        >>> ks_stat, p_val = calculate_ks_statistic(baseline, current)
-        >>> if p_val < 0.05:
-        >>>     print(f"Significant drift detected: KS={ks_stat:.4f}")
     """
     from scipy import stats
-    import numpy as np
 
     baseline_values = np.array(baseline_values, dtype=float)
     current_values = np.array(current_values, dtype=float)
@@ -165,9 +180,20 @@ def calculate_ks_statistic(baseline_values, current_values):
     return float(ks_stat), float(p_value)
 
 
+# =========================================================================
+# Active drift detection — powered by Evidently
+# =========================================================================
+
 def check_data_drift():
-    """Check for data drift by comparing recent inference data to baseline."""
-    print("🔍 Checking data drift...")
+    """Check for data drift using Evidently DataDriftPreset.
+
+    Queries recent inference data and baseline training data from Athena,
+    builds DataFrames, and runs Evidently's DataDriftPreset report.
+
+    Returns:
+        dict with drift results or None if insufficient data.
+    """
+    print("🔍 Checking data drift (Evidently)...")
 
     # Get recent inference data (last 24 hours)
     yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
@@ -187,20 +213,25 @@ def check_data_drift():
 
     print(f"✓ Found {len(recent_data)} recent inference samples")
 
-    # Parse JSON features
-    import numpy as np
-    current_features = {}
-    for feat in TRAINING_FEATURES:
-        current_features[feat] = []
-
+    # Parse JSON features into a DataFrame
+    current_rows = []
     for row in recent_data:
         try:
             features = json.loads(row['input_features'])
+            parsed = {}
             for feat in TRAINING_FEATURES:
                 if feat in features:
-                    current_features[feat].append(float(features[feat]))
-        except Exception as e:
+                    parsed[feat] = float(features[feat])
+            if parsed:
+                current_rows.append(parsed)
+        except Exception:
             continue
+
+    if len(current_rows) < MIN_SAMPLES:
+        print(f"⚠️ Not enough parseable samples ({len(current_rows)} < {MIN_SAMPLES})")
+        return None
+
+    current_df = pd.DataFrame(current_rows)
 
     # Get baseline data (sample from training data)
     baseline_sql = f"""
@@ -214,93 +245,77 @@ def check_data_drift():
     baseline_data = execute_athena_query(baseline_sql)
     print(f"✓ Loaded {len(baseline_data)} baseline samples")
 
-    # Calculate PSI for each feature
-    drift_results = []
+    baseline_df = pd.DataFrame(baseline_data)
+    # Ensure numeric types
+    for col in baseline_df.columns:
+        baseline_df[col] = pd.to_numeric(baseline_df[col], errors='coerce')
+
+    # Use only columns present in both DataFrames
+    common_cols = sorted(set(baseline_df.columns) & set(current_df.columns))
+    if not common_cols:
+        print("⚠️ No common columns between baseline and current data")
+        return None
+
+    baseline_df = baseline_df[common_cols]
+    current_df = current_df[common_cols]
+
+    # Save Evidently HTML report to /tmp for MLflow artifact logging
+    html_path = tempfile.NamedTemporaryFile(
+        suffix='.html', prefix='data_drift_', delete=False, dir='/tmp'
+    ).name
+
+    # Run Evidently data drift report
+    drift_result = run_data_drift_report(
+        baseline_df=baseline_df,
+        current_df=current_df,
+        output_path=html_path,
+    )
+
+    # Build per-column summary for SNS alert
     drifted_features = []
-
-    for feat in TRAINING_FEATURES:
-        if len(current_features[feat]) < MIN_SAMPLES:
-            continue
-
-        baseline_values = [float(row[feat]) for row in baseline_data if row.get(feat)]
-        current_values = current_features[feat]
-
-        if len(baseline_values) < MIN_SAMPLES or len(current_values) < MIN_SAMPLES:
-            continue
-
-        try:
-            # Calculate both PSI and KS test
-            psi = calculate_psi(baseline_values, current_values)
-            ks_stat, ks_pvalue = calculate_ks_statistic(baseline_values, current_values)
-
-            # Dual-threshold detection: flag drift if EITHER test triggers
-            drift_psi = psi >= DATA_DRIFT_THRESHOLD        # PSI threshold (default: 0.2)
-            drift_ks = ks_pvalue < KS_PVALUE_THRESHOLD     # KS p-value threshold (default: 0.05)
-            has_drift = drift_psi or drift_ks
-
-            drift_results.append({
-                'feature': feat,
-                'psi': psi,
-                'ks_statistic': ks_stat,
-                'ks_pvalue': ks_pvalue,
-                'drift_method': 'ks' if drift_ks else ('psi' if drift_psi else 'none'),
-                'drifted': has_drift
+    per_column = drift_result.get('per_column', {})
+    for col, info in per_column.items():
+        if info.get('drifted'):
+            drifted_features.append({
+                'feature': col,
+                'drift_score': info.get('drift_score', 0),
             })
 
-            if has_drift:
-                drifted_features.append({
-                    'feature': feat,
-                    'psi': psi,
-                    'ks_statistic': ks_stat,
-                    'ks_pvalue': ks_pvalue,
-                    'drift_method': 'ks' if drift_ks else 'psi'
-                })
-                method_label = 'KS' if drift_ks else 'PSI'
-                print(f"  🚨 {feat}: PSI={psi:.4f}, KS={ks_stat:.4f}, p={ks_pvalue:.4f} [DRIFT via {method_label}]")
-            else:
-                print(f"  ✓ {feat}: PSI={psi:.4f}, KS={ks_stat:.4f}, p={ks_pvalue:.4f} [OK]")
+    # Sort by drift score ascending (lower p-value = more drifted)
+    drifted_features.sort(key=lambda x: x['drift_score'])
 
-        except Exception as e:
-            print(f"  ⚠️ Error calculating drift for {feat}: {e}")
+    features_analyzed = len(per_column)
+    drifted_count = drift_result['drifted_columns_count']
+    drift_share = drift_result['drifted_columns_share']
 
-    # Calculate summary metrics
-    if drift_results:
-        avg_psi = sum(r['psi'] for r in drift_results) / len(drift_results)
-        max_psi = max(r['psi'] for r in drift_results)
-        drift_pct = (len(drifted_features) / len(drift_results)) * 100
+    print(f"  Evidently: {drifted_count}/{features_analyzed} features drifted ({drift_share:.1%})")
+    if drift_result['drift_detected']:
+        print("  🚨 Overall data drift DETECTED")
+    else:
+        print("  ✓ No overall data drift detected")
 
-        # KS statistics
-        avg_ks = sum(r['ks_statistic'] for r in drift_results) / len(drift_results)
-        max_ks = max(r['ks_statistic'] for r in drift_results)
-        min_pvalue = min(r['ks_pvalue'] for r in drift_results)
-
-        # Count by detection method
-        ks_detected = sum(1 for r in drift_results if r.get('drift_method') == 'ks')
-        psi_detected = sum(1 for r in drift_results if r.get('drift_method') == 'psi')
-
-        return {
-            'detected': len(drifted_features) > 0,
-            'features_analyzed': len(drift_results),
-            'drifted_features_count': len(drifted_features),
-            'drift_percentage': drift_pct,
-            'avg_psi': avg_psi,
-            'max_psi': max_psi,
-            'avg_ks_statistic': avg_ks,
-            'max_ks_statistic': max_ks,
-            'min_ks_pvalue': min_pvalue,
-            'ks_detected_count': ks_detected,
-            'psi_detected_count': psi_detected,
-            'drifted_features': drifted_features[:5],  # Top 5
-            'sample_size': len(recent_data),
-            'all_drift_results': drift_results  # For MLflow logging
-        }
-
-    return None
+    return {
+        'detected': drift_result['drift_detected'],
+        'features_analyzed': features_analyzed,
+        'drifted_features_count': drifted_count,
+        'drift_percentage': drift_share * 100,
+        'drifted_columns_share': drift_share,
+        'drifted_features': drifted_features[:5],  # Top 5
+        'sample_size': len(current_rows),
+        'html_report_path': html_path,
+    }
 
 
 def check_model_drift():
-    """Check for model performance drift."""
-    print("🔍 Checking model drift...")
+    """Check for model performance drift using Evidently ClassificationPreset.
+
+    Queries recent predictions with ground truth from Athena, builds a
+    baseline comparison DataFrame, and runs Evidently's ClassificationPreset.
+
+    Returns:
+        dict with model drift results or None if insufficient data.
+    """
+    print("🔍 Checking model drift (Evidently)...")
 
     # Get recent predictions with ground truth (last 7 days)
     week_ago = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d %H:%M:%S')
@@ -324,13 +339,18 @@ def check_model_drift():
 
     print(f"✓ Found {len(recent_performance)} samples with ground truth")
 
-    # Calculate ROC-AUC
-    from sklearn.metrics import roc_auc_score, accuracy_score, precision_score, recall_score
-    import numpy as np
+    # Build current DataFrame
+    current_df = pd.DataFrame(recent_performance)
+    current_df['ground_truth'] = current_df['ground_truth'].astype(int)
+    current_df['prediction'] = current_df['prediction'].astype(int)
+    current_df['probability_fraud'] = current_df['probability_fraud'].astype(float)
 
-    y_true = np.array([int(row['ground_truth']) for row in recent_performance])
-    y_pred = np.array([int(row['prediction']) for row in recent_performance])
-    y_prob = np.array([float(row['probability_fraud']) for row in recent_performance])
+    # Compute sklearn metrics for the SNS alert / response payload
+    from sklearn.metrics import roc_auc_score, accuracy_score, precision_score, recall_score
+
+    y_true = current_df['ground_truth'].values
+    y_pred = current_df['prediction'].values
+    y_prob = current_df['probability_fraud'].values
 
     current_roc_auc = roc_auc_score(y_true, y_prob)
     current_accuracy = accuracy_score(y_true, y_pred)
@@ -342,18 +362,60 @@ def check_model_drift():
     print(f"  Current Precision: {current_precision:.4f}")
     print(f"  Current Recall: {current_recall:.4f}")
 
-    # Compare to baseline (expected performance from training)
-    # In production, this should come from MLflow or a baseline metrics table
+    # Compare to baseline
     baseline_roc_auc = float(os.getenv('BASELINE_ROC_AUC', '0.92'))
-
     degradation = baseline_roc_auc - current_roc_auc
     degradation_pct = (degradation / baseline_roc_auc) * 100
 
     print(f"  Baseline ROC-AUC: {baseline_roc_auc:.4f}")
     print(f"  Degradation: {degradation:.4f} ({degradation_pct:.1f}%)")
 
+    # Build a synthetic baseline DataFrame with the same schema so Evidently
+    # can compare reference vs current classification performance.
+    # In production you'd load actual baseline predictions from S3/Athena.
+    baseline_sql = f"""
+    SELECT prediction, probability_fraud, ground_truth
+    FROM {ATHENA_DATABASE}.inference_responses
+    WHERE ground_truth IS NOT NULL
+      AND request_timestamp < TIMESTAMP '{week_ago}'
+    ORDER BY RANDOM()
+    LIMIT 5000
+    """
+
+    try:
+        baseline_data = execute_athena_query(baseline_sql)
+        if len(baseline_data) >= MIN_SAMPLES:
+            baseline_df = pd.DataFrame(baseline_data)
+            baseline_df['ground_truth'] = baseline_df['ground_truth'].astype(int)
+            baseline_df['prediction'] = baseline_df['prediction'].astype(int)
+            baseline_df['probability_fraud'] = baseline_df['probability_fraud'].astype(float)
+        else:
+            # Fall back: duplicate current as baseline (report still generates)
+            baseline_df = current_df.copy()
+    except Exception:
+        baseline_df = current_df.copy()
+
+    # Save Evidently HTML report to /tmp
+    html_path = tempfile.NamedTemporaryFile(
+        suffix='.html', prefix='model_perf_', delete=False, dir='/tmp'
+    ).name
+
+    classification_result = run_classification_report(
+        baseline_df=baseline_df,
+        current_df=current_df,
+        target_column='ground_truth',
+        prediction_column='prediction',
+        output_path=html_path,
+    )
+
+    detected = degradation_pct >= (MODEL_DRIFT_THRESHOLD * 100)
+    if detected:
+        print("  🚨 Model performance drift DETECTED")
+    else:
+        print("  ✓ No model performance drift detected")
+
     return {
-        'detected': degradation_pct >= (MODEL_DRIFT_THRESHOLD * 100),
+        'detected': detected,
         'baseline_roc_auc': baseline_roc_auc,
         'current_roc_auc': current_roc_auc,
         'degradation': degradation,
@@ -361,7 +423,9 @@ def check_model_drift():
         'accuracy': current_accuracy,
         'precision': current_precision,
         'recall': current_recall,
-        'sample_size': len(recent_performance)
+        'sample_size': len(recent_performance),
+        'html_report_path': html_path,
+        'evidently_metrics': classification_result.get('metrics', []),
     }
 
 
@@ -386,51 +450,33 @@ def send_sns_alert(data_drift_result, model_drift_result):
         "ML MODEL DRIFT ALERT",
         "=" * 80,
         f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        f"Detection Engine: Evidently AI",
         "",
     ]
 
     if data_drift_detected:
         message_lines.extend([
-            "🔴 DATA DRIFT DETECTED",
+            "🔴 DATA DRIFT DETECTED (Evidently DataDriftPreset)",
             "=" * 80,
             f"Features Analyzed: {data_drift_result['features_analyzed']}",
-            f"Drifted Features: {data_drift_result['drifted_features_count']} ({data_drift_result['drift_percentage']:.1f}%)",
+            f"Drifted Features: {data_drift_result['drifted_features_count']} "
+            f"({data_drift_result['drift_percentage']:.1f}%)",
+            f"Drifted Columns Share: {data_drift_result['drifted_columns_share']:.1%}",
             "",
-            "PSI Statistics:",
-            f"  Average PSI: {data_drift_result['avg_psi']:.4f}",
-            f"  Max PSI: {data_drift_result['max_psi']:.4f}",
-            f"  Threshold: {DATA_DRIFT_THRESHOLD}",
-            "",
-            "KS Test Statistics:",
-            f"  Average KS: {data_drift_result['avg_ks_statistic']:.4f}",
-            f"  Max KS: {data_drift_result['max_ks_statistic']:.4f}",
-            f"  Min p-value: {data_drift_result['min_ks_pvalue']:.6f}",
-            f"  p-value Threshold: {KS_PVALUE_THRESHOLD} ({(1-KS_PVALUE_THRESHOLD)*100:.0f}% confidence)",
-            "",
-            "Detection Methods:",
-            f"  Detected by KS test: {data_drift_result['ks_detected_count']} features",
-            f"  Detected by PSI: {data_drift_result['psi_detected_count']} features",
-            "",
-            "Top Drifted Features:",
+            "Top Drifted Features (by drift score):",
         ])
 
-        for feat_info in data_drift_result['drifted_features']:
-            method = feat_info.get('drift_method', 'psi').upper()
-            ks_stat = feat_info.get('ks_statistic', 0)
-            ks_pvalue = feat_info.get('ks_pvalue', 1)
+        for feat_info in data_drift_result.get('drifted_features', []):
             message_lines.append(
                 f"  - {feat_info['feature']}: "
-                f"PSI={feat_info['psi']:.4f}, "
-                f"KS={ks_stat:.4f}, "
-                f"p={ks_pvalue:.4f} "
-                f"[{method}]"
+                f"drift_score={feat_info['drift_score']:.4f}"
             )
 
         message_lines.append("")
 
     if model_drift_detected:
         message_lines.extend([
-            "🔴 MODEL PERFORMANCE DRIFT DETECTED",
+            "🔴 MODEL PERFORMANCE DRIFT DETECTED (Evidently ClassificationPreset)",
             "=" * 80,
             f"Baseline ROC-AUC: {model_drift_result['baseline_roc_auc']:.4f}",
             f"Current ROC-AUC: {model_drift_result['current_roc_auc']:.4f}",
@@ -447,12 +493,12 @@ def send_sns_alert(data_drift_result, model_drift_result):
         "=" * 80,
         "RECOMMENDED ACTIONS:",
         "=" * 80,
-        "1. Review drift analysis in MLflow monitoring experiment",
+        "1. Review Evidently HTML reports in MLflow monitoring experiment",
         "2. Investigate root cause of drift (data quality, population shift, etc.)",
         "3. Consider retraining model with recent data",
         "4. Review and adjust decision thresholds if needed",
         "",
-        "View detailed metrics in inference_monitoring.ipynb",
+        "View detailed Evidently reports in MLflow artifacts or inference_monitoring.ipynb",
         "=" * 80,
     ])
 
@@ -470,13 +516,29 @@ def send_sns_alert(data_drift_result, model_drift_result):
         print(f"❌ Failed to send SNS alert: {e}")
 
 
+# =========================================================================
+# Legacy chart functions (kept for reference)
+#
+# These show how to build custom matplotlib visualizations for drift
+# analysis. The active Lambda flow now logs Evidently's interactive HTML
+# reports as MLflow artifacts instead.
+# =========================================================================
+
 def create_psi_chart(drift_results):
-    """Create PSI bar chart visualization."""
+    """Create PSI bar chart visualization.
+
+    LEGACY — Replaced by Evidently HTML data drift report logged as an
+    MLflow artifact. Kept to demonstrate custom matplotlib charting.
+    """
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+
     if not drift_results:
         return None
 
     # Sort by PSI value
-    sorted_results = sorted(drift_results, key=lambda x: x['psi'], reverse=True)[:15]  # Top 15
+    sorted_results = sorted(drift_results, key=lambda x: x['psi'], reverse=True)[:15]
 
     features = [r['feature'] for r in sorted_results]
     psi_values = [r['psi'] for r in sorted_results]
@@ -485,7 +547,6 @@ def create_psi_chart(drift_results):
     fig, ax = plt.subplots(figsize=(12, 8))
     bars = ax.barh(features, psi_values, color=colors, alpha=0.7)
 
-    # Add threshold line
     ax.axvline(x=DATA_DRIFT_THRESHOLD, color='orange', linestyle='--',
                linewidth=2, label=f'Threshold ({DATA_DRIFT_THRESHOLD})')
 
@@ -495,14 +556,12 @@ def create_psi_chart(drift_results):
     ax.legend()
     ax.grid(axis='x', alpha=0.3)
 
-    # Add value labels
     for i, (bar, val) in enumerate(zip(bars, psi_values)):
         ax.text(val + 0.005, bar.get_y() + bar.get_height()/2,
                 f'{val:.4f}', va='center', fontsize=9)
 
     plt.tight_layout()
 
-    # Save to temp file
     temp_file = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
     plt.savefig(temp_file.name, dpi=150, bbox_inches='tight')
     plt.close()
@@ -511,16 +570,24 @@ def create_psi_chart(drift_results):
 
 
 def create_model_performance_chart(model_drift_result):
-    """Create model performance comparison chart."""
+    """Create model performance comparison chart.
+
+    LEGACY — Replaced by Evidently HTML classification report logged as
+    an MLflow artifact. Kept to demonstrate custom matplotlib charting.
+    """
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+
     if not model_drift_result:
         return None
 
     metrics = ['ROC-AUC', 'Accuracy', 'Precision', 'Recall']
     baseline_values = [
         model_drift_result['baseline_roc_auc'],
-        0.95,  # Approximate baseline accuracy (adjust as needed)
-        0.90,  # Approximate baseline precision
-        0.85   # Approximate baseline recall
+        0.95,
+        0.90,
+        0.85
     ]
     current_values = [
         model_drift_result['current_roc_auc'],
@@ -547,7 +614,6 @@ def create_model_performance_chart(model_drift_result):
     ax.grid(axis='y', alpha=0.3)
     ax.set_ylim(0, 1.1)
 
-    # Add value labels
     for bars in [bars1, bars2]:
         for bar in bars:
             height = bar.get_height()
@@ -556,7 +622,6 @@ def create_model_performance_chart(model_drift_result):
 
     plt.tight_layout()
 
-    # Save to temp file
     temp_file = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
     plt.savefig(temp_file.name, dpi=150, bbox_inches='tight')
     plt.close()
@@ -564,8 +629,12 @@ def create_model_performance_chart(model_drift_result):
     return temp_file.name
 
 
-def log_to_mlflow(data_drift_result, model_drift_result, drift_results):
-    """Log drift metrics and charts to MLflow."""
+# =========================================================================
+# MLflow logging — logs Evidently HTML reports as artifacts
+# =========================================================================
+
+def log_to_mlflow(data_drift_result, model_drift_result):
+    """Log drift metrics and Evidently HTML reports to MLflow."""
     if not MLFLOW_AVAILABLE:
         print("⚠️ MLflow not available - skipping MLflow logging")
         return
@@ -575,38 +644,38 @@ def log_to_mlflow(data_drift_result, model_drift_result, drift_results):
         return
 
     try:
-        # Set MLflow tracking URI
         mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
         mlflow.set_experiment("fraud-detection-drift-monitoring")
 
         with mlflow.start_run(run_name=f"drift-check-{datetime.now().strftime('%Y%m%d-%H%M%S')}"):
             # Log configuration parameters
-            mlflow.log_param("data_drift_threshold", DATA_DRIFT_THRESHOLD)
+            mlflow.log_param("detection_engine", "evidently")
             mlflow.log_param("model_drift_threshold", MODEL_DRIFT_THRESHOLD)
             mlflow.log_param("min_samples", MIN_SAMPLES)
 
-            # Log data drift metrics
+            # --- Data drift metrics + Evidently report ---
             if data_drift_result:
                 mlflow.log_metric("data_drift_detected", 1 if data_drift_result['detected'] else 0)
                 mlflow.log_metric("features_analyzed", data_drift_result['features_analyzed'])
                 mlflow.log_metric("drifted_features_count", data_drift_result['drifted_features_count'])
                 mlflow.log_metric("drift_percentage", data_drift_result['drift_percentage'])
-                mlflow.log_metric("avg_psi", data_drift_result['avg_psi'])
-                mlflow.log_metric("max_psi", data_drift_result['max_psi'])
+                mlflow.log_metric("drifted_columns_share", data_drift_result['drifted_columns_share'])
                 mlflow.log_metric("data_sample_size", data_drift_result['sample_size'])
 
-                # Log individual feature PSI values
-                if drift_results:
-                    for result in drift_results:
-                        mlflow.log_metric(f"psi_{result['feature']}", result['psi'])
+                # Log per-feature drift scores
+                for feat_info in data_drift_result.get('drifted_features', []):
+                    mlflow.log_metric(
+                        f"drift_score_{feat_info['feature']}",
+                        feat_info['drift_score'],
+                    )
 
-                # Create and log PSI chart
-                psi_chart_path = create_psi_chart(drift_results)
-                if psi_chart_path:
-                    mlflow.log_artifact(psi_chart_path, "drift_charts")
-                    os.unlink(psi_chart_path)  # Clean up temp file
+                # Log Evidently HTML report as artifact
+                html_path = data_drift_result.get('html_report_path')
+                if html_path and os.path.exists(html_path):
+                    mlflow.log_artifact(html_path, "evidently_reports")
+                    os.unlink(html_path)
 
-            # Log model drift metrics
+            # --- Model drift metrics + Evidently report ---
             if model_drift_result:
                 mlflow.log_metric("model_drift_detected", 1 if model_drift_result['detected'] else 0)
                 mlflow.log_metric("baseline_roc_auc", model_drift_result['baseline_roc_auc'])
@@ -618,30 +687,52 @@ def log_to_mlflow(data_drift_result, model_drift_result, drift_results):
                 mlflow.log_metric("current_recall", model_drift_result['recall'])
                 mlflow.log_metric("model_sample_size", model_drift_result['sample_size'])
 
-                # Create and log model performance chart
-                perf_chart_path = create_model_performance_chart(model_drift_result)
-                if perf_chart_path:
-                    mlflow.log_artifact(perf_chart_path, "drift_charts")
-                    os.unlink(perf_chart_path)  # Clean up temp file
+                # Log Evidently classification metrics (accuracy, F1, etc.)
+                for m in model_drift_result.get('evidently_metrics', []):
+                    name = m.get('metric_name', '')
+                    value = m.get('value')
+                    if isinstance(value, (int, float)):
+                        import re
+                        # Strip parenthesized args and sanitize for MLflow
+                        safe_name = re.sub(r'\([^)]*\)', '', name)
+                        safe_name = safe_name.replace('::', '_').replace(' ', '_').lower().strip('_')
+                        safe_name = re.sub(r'[^a-z0-9_\-\. /:]', '', safe_name)
+                        if safe_name:
+                            mlflow.log_metric(f"evidently_{safe_name}", value)
+
+                # Log Evidently HTML report as artifact
+                html_path = model_drift_result.get('html_report_path')
+                if html_path and os.path.exists(html_path):
+                    mlflow.log_artifact(html_path, "evidently_reports")
+                    os.unlink(html_path)
 
             # Log drift summary as JSON artifact
             summary = {
                 'timestamp': datetime.now().isoformat(),
-                'data_drift': data_drift_result,
-                'model_drift': model_drift_result,
+                'detection_engine': 'evidently',
+                'data_drift': {
+                    k: v for k, v in (data_drift_result or {}).items()
+                    if k not in ('html_report_path',)
+                },
+                'model_drift': {
+                    k: v for k, v in (model_drift_result or {}).items()
+                    if k not in ('html_report_path', 'evidently_metrics')
+                },
                 'alert_sent': (
                     (data_drift_result and data_drift_result.get('detected', False)) or
                     (model_drift_result and model_drift_result.get('detected', False))
-                )
+                ),
             }
 
-            summary_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
-            json.dump(summary, summary_file, indent=2)
+            summary_file = tempfile.NamedTemporaryFile(
+                mode='w', suffix='.json', delete=False
+            )
+            json.dump(summary, summary_file, indent=2, default=str)
             summary_file.close()
             mlflow.log_artifact(summary_file.name, "drift_reports")
-            os.unlink(summary_file.name)  # Clean up temp file
+            os.unlink(summary_file.name)
 
-            print("✓ Successfully logged metrics and charts to MLflow")
+            print("✓ Successfully logged Evidently reports and metrics to MLflow")
 
     except Exception as e:
         print(f"⚠️ Failed to log to MLflow: {e}")
@@ -649,44 +740,47 @@ def log_to_mlflow(data_drift_result, model_drift_result, drift_results):
         traceback.print_exc()
 
 
+# =========================================================================
+# Lambda entry point
+# =========================================================================
+
 def lambda_handler(event, context):
     """Lambda handler for EventBridge scheduled drift monitoring."""
     print("=" * 80)
-    print(f"Drift Monitoring Check - {datetime.now()}")
+    print(f"Drift Monitoring Check (Evidently) - {datetime.now()}")
     print("=" * 80)
 
     try:
-        # Check data drift
+        # Check data drift (Evidently DataDriftPreset)
         data_drift_result = check_data_drift()
 
-        # Check model drift
+        # Check model drift (Evidently ClassificationPreset)
         model_drift_result = check_model_drift()
 
-        # Extract detailed drift results for MLflow logging
-        drift_results = None
-        if data_drift_result and 'all_drift_results' in data_drift_result:
-            drift_results = data_drift_result['all_drift_results']
-            # Remove from response to keep it clean
-            data_drift_result_copy = data_drift_result.copy()
-            data_drift_result_copy.pop('all_drift_results', None)
-        else:
-            data_drift_result_copy = data_drift_result
-
-        # Log metrics and charts to MLflow
-        log_to_mlflow(data_drift_result, model_drift_result, drift_results)
+        # Log Evidently reports and metrics to MLflow
+        log_to_mlflow(data_drift_result, model_drift_result)
 
         # Send alert if drift detected
         send_sns_alert(data_drift_result, model_drift_result)
 
-        # Prepare response
+        # Prepare response (exclude local file paths)
+        def _clean(result):
+            if result is None:
+                return None
+            return {
+                k: v for k, v in result.items()
+                if k not in ('html_report_path', 'evidently_metrics')
+            }
+
         response = {
             'timestamp': datetime.now().isoformat(),
-            'data_drift': data_drift_result_copy,
-            'model_drift': model_drift_result,
+            'detection_engine': 'evidently',
+            'data_drift': _clean(data_drift_result),
+            'model_drift': _clean(model_drift_result),
             'alert_sent': (
                 (data_drift_result and data_drift_result.get('detected', False)) or
                 (model_drift_result and model_drift_result.get('detected', False))
-            )
+            ),
         }
 
         print("=" * 80)
@@ -695,7 +789,7 @@ def lambda_handler(event, context):
 
         return {
             'statusCode': 200,
-            'body': json.dumps(response, indent=2)
+            'body': json.dumps(response, indent=2, default=str)
         }
 
     except Exception as e:

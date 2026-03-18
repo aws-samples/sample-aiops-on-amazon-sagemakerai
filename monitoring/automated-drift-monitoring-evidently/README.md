@@ -10,12 +10,14 @@ This project implements a complete ML lifecycle for fraud detection:
 - **Experiment Tracking:** MLflow for model versioning, metrics, and artifact management
 - **Data Lake:** Athena Iceberg tables for training data and inference logging
 - **Custom Inference Handler:** Automatic logging of all predictions with buffered async writes
-- **Monitoring & Drift Detection:** Continuous model performance tracking with 8+ visualizations
+- **Monitoring & Drift Detection:** Continuous model performance tracking with Evidently-powered interactive reports
 - **Ground Truth Integration:** Asynchronous ground truth capture and model retraining triggers
 
 ## Architecture Diagram
 
-![MLOps Architecture](architecture_diagram.png)
+![MLOps Architecture](docs/guides/architecture_diagram.png)
+
+> To regenerate: `python docs/generate_architecture_diagram.py` (requires `pip install diagrams` and `brew install graphviz`)
 
 The diagram above shows the complete MLOps architecture including:
 - **Training Pipeline** (top): Orchestrated by `pipeline_execution.ipynb`, includes preprocessing, training, deployment, and inference with SQS logging
@@ -25,7 +27,7 @@ The diagram above shows the complete MLOps architecture including:
 
 ## Diving Deep into Inference Monitoring Pipeline
 
-![Inference Monitoring Pipeline](inference_monitoring_diagram.png)
+![Inference Monitoring Pipeline](docs/guides/inference_monitoring_diagram.png)
 
 This detailed diagram shows the **end-to-end inference monitoring flow** with MLflow as the central monitoring interface:
 
@@ -52,22 +54,23 @@ This detailed diagram shows the **end-to-end inference monitoring flow** with ML
 MLflow serves as the **unified monitoring dashboard** where all monitoring workflows converge:
 
 **Metrics Logged:**
-- **Per-Feature Drift**: `psi_transaction_amount`, `psi_customer_age`, etc. (30 features)
-- **Aggregate Drift**: `avg_psi`, `max_psi`, `drift_percentage`, `drifted_features_count`
-- **Model Performance**: `current_roc_auc`, `accuracy`, `precision`, `recall`
+- **Data Drift**: `drifted_columns_count`, `drifted_columns_share`, per-feature `drift_score_*` (via Evidently DataDriftPreset)
+- **Model Performance**: `current_roc_auc`, `accuracy`, `precision`, `recall`, plus Evidently classification metrics (`evidently_accuracy`, `evidently_f1`, etc.)
 - **Degradation**: `roc_auc_degradation`, `roc_auc_degradation_pct`
 - **Detection Flags**: `data_drift_detected`, `model_drift_detected`
 
-**Visualizations (artifacts/drift_charts/):**
-- PSI bar chart showing top 15 drifted features (color-coded: red=drifted, green=normal)
-- Model performance comparison chart (baseline vs current metrics)
+**Visualizations (artifacts/evidently_reports/):**
+- Interactive Evidently HTML data drift report (PSI, KS, distribution comparisons per feature)
+- Interactive Evidently HTML classification report (ROC curve, PR curve, confusion matrix, accuracy, F1)
 
 **Artifacts:**
-- `drift_reports/summary.json` - Complete drift analysis with all details
+- `evidently_reports/data_drift_*.html` - Full interactive data drift dashboard
+- `evidently_reports/classification_*.html` - Full interactive classification dashboard
+- `drift_reports/drift_summary_*.json` - Structured JSON drift summary
 
 **5. Monitoring Workflows**
-- **Manual**: Data scientists run `inference_monitoring.ipynb` → query Athena → analyze drift → generate 8+ charts → log to MLflow
-- **Automated**: EventBridge triggers Lambda daily → calculates PSI for all features → logs metrics & charts to MLflow → sends SNS alert if drift detected
+- **Manual**: Data scientists run `inference_monitoring.ipynb` → query Athena → run Evidently reports → log interactive HTML reports to MLflow
+- **Automated**: EventBridge triggers Lambda daily → runs Evidently DataDriftPreset + ClassificationPreset → logs HTML reports & metrics to MLflow → sends SNS alert if drift detected
 
 **6. Alerting**
 - SNS sends email notifications when thresholds exceeded
@@ -76,9 +79,9 @@ MLflow serves as the **unified monitoring dashboard** where all monitoring workf
 
 ### Key Differentiators:
 
-✅ **MLflow as Single Pane of Glass** - All monitoring metrics, visualizations, and artifacts in one interface
-✅ **Comprehensive Feature Tracking** - PSI calculated for all 30 features, not just aggregate metrics
-✅ **Automated + Manual** - Both notebook-based exploration and scheduled checks
+✅ **MLflow as Single Pane of Glass** - All monitoring metrics, Evidently HTML reports, and artifacts in one interface
+✅ **Evidently-Powered Drift Detection** - Interactive HTML reports with PSI, KS, distribution comparisons per feature
+✅ **Automated + Manual** - Both notebook-based exploration and scheduled Lambda checks
 ✅ **Ground Truth Integration** - Handles delayed fraud confirmation typical in fraud detection
 ✅ **Zero Inference Latency** - Async logging doesn't impact prediction response time
 ✅ **Cost-Efficient** - $5/month Lambda + $25/month Athena vs. $200+/month for SageMaker Model Monitor
@@ -144,7 +147,7 @@ MLflow serves as the **unified monitoring dashboard** where all monitoring workf
 │  - Merchant reports                                                             │
 │                                                                                 │
 │  *** DEVELOPMENT: Simulation for testing ***                                    │
-│  scripts/simulate_ground_truth_from_athena.py                                   │
+│  src/monitoring/simulate_ground_truth_from_athena.py                            │
 │  (Creates realistic ground truth with configurable accuracy)                    │
 │                       ↓                                                         │
 │  ┌─────────────────────────────────────────────────────────────────────────┐    │
@@ -157,7 +160,7 @@ MLflow serves as the **unified monitoring dashboard** where all monitoring workf
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                      GROUND TRUTH UPDATE (Batch Job)                            │
 │                                                                                 │
-│  scripts/update_ground_truth.py --mode batch                                    │
+│  src/monitoring/update_ground_truth.py --mode batch                             │
 │                       ↓                                                         │
 │  Athena MERGE: inference_responses ← ground_truth_updates                       │
 │  (Updates ground_truth column for confirmed transactions)                       │
@@ -171,7 +174,7 @@ MLflow serves as the **unified monitoring dashboard** where all monitoring workf
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                    MONITORING & DRIFT DETECTION (Continuous)                   │
 │                                                                                │
-│  scripts/monitor_model_performance.py --days 30                                │
+│  src/monitoring/monitor_model_performance.py --days 30                         │
 │                       ↓                                                        │
 │  ┌─────────────────────────────────────────────────────────────────────────┐   │
 │  │                    Performance Metrics                                  │   │
@@ -183,9 +186,9 @@ MLflow serves as the **unified monitoring dashboard** where all monitoring workf
 │                       ↓                                                        │
 │  ┌─────────────────────────────────────────────────────────────────────────┐   │
 │  │                     Data Drift Detection                                │   │
-│  │   • PSI (Population Stability Index): continuous features               │   │
-│  │   • Chi-Square Test: categorical features                               │   │
-│  │   • KS Test: distribution changes                                       │   │
+│  │   • Evidently DataDriftPreset: KS, PSI, and other statistical tests     │   │
+│  │   • Per-column drift scores with statistical significance               │   │
+│  │   • Interactive HTML reports saved to MLflow                            │   │
 │  │   • Feature-level drift scores                                          │   │
 │  └─────────────────────────────────────────────────────────────────────────┘   │
 │                       ↓                                                        │
@@ -198,8 +201,9 @@ MLflow serves as the **unified monitoring dashboard** where all monitoring workf
 │                       ↓                                                        │
 │  ┌─────────────────────────────────────────────────────────────────────────┐   │
 │  │                 Visualization & Alerting                                │   │
-│  │   • 8+ charts logged to MLflow                                          │   │
-│  │   • ROC curves, confusion matrices, drift heatmaps                      │   │
+│  │   • Evidently interactive HTML reports logged to MLflow                 │   │
+│  │   • Data drift report (distributions, PSI, KS per feature)              │   │
+│  │   • Classification report (ROC, PR, confusion matrix)                   │   │
 │  │   • Alert if performance degrades below threshold                       │   │
 │  └─────────────────────────────────────────────────────────────────────────┘   │
 │                       ↓                                                        │
@@ -226,11 +230,11 @@ This solution addresses a critical gap: **lack of production-ready inference mon
 
 **Key Differentiators:**
 
-1. **Open-Source SDKs (MLflow, Pandas, Scikit-learn)** - Ensures portability across AWS, GCP, Azure, or on-prem. No vendor lock-in. Industry-standard tools = easier hiring.
+1. **Open-Source SDKs (MLflow, Evidently, Pandas, Scikit-learn)** - Ensures portability across AWS, GCP, Azure, or on-prem. No vendor lock-in. Industry-standard tools = easier hiring.
 
 2. **Cost Efficiency** - $255/month vs. $1,850+/month for fully managed platforms (86% savings). Serverless architecture = pay only for actual usage, not idle capacity.
 
-3. **Custom Inference Monitoring** - Built-in drift detection (PSI for all features), automated ground truth integration, and EventBridge/Lambda alerting. Most platforms lack comprehensive inference monitoring or charge premium rates.
+3. **Custom Inference Monitoring** - Evidently-powered drift detection (DataDriftPreset for all features, ClassificationPreset for model performance), automated ground truth integration, and EventBridge/Lambda alerting with interactive HTML reports logged to MLflow. Most platforms lack comprehensive inference monitoring or charge premium rates.
 
 4. **Production-Grade Without Platform Costs** - SageMaker provides reliability (99.9% SLA) while MLflow provides portability. Best of both worlds: enterprise reliability + startup agility.
 
@@ -276,8 +280,9 @@ automated-drift-monitoring-evidently/
 │   │   ├── config.py                         # Configuration constants
 │   │   └── config.yaml                       # Central configuration
 │   ├── monitoring/
+│   │   ├── evidently_reports.py              # Evidently-based drift & classification reports
 │   │   ├── monitor_model_performance.py      # Performance monitoring & alerts
-│   │   ├── lambda_drift_monitor.py           # Drift monitoring infrastructure
+│   │   ├── lambda_drift_monitor.py           # Automated drift monitoring (Evidently + MLflow)
 │   │   ├── lambda_inference_logger.py        # SQS-to-Athena inference log consumption
 │   │   ├── generate_drift_dataset.py         # Generate drifted test data
 │   │   ├── simulate_ground_truth_from_athena.py # Ground truth simulator (dev/test)
@@ -289,6 +294,7 @@ automated-drift-monitoring-evidently/
 │   │   ├── setup_drift_monitoring.py         # Drift monitoring infrastructure
 │   │   ├── setup_scheduled_inference.py      # EventBridge scheduled inference
 │   │   ├── setup_scheduled_batch_transform.py # Scheduled batch transform
+│   │   ├── upload_data_to_s3.py              # Upload local CSV data to S3
 │   │   ├── create_or_update_sagemaker_role.py # IAM role setup
 │   │   ├── create_lambda_role.py             # Lambda execution role
 │   │   └── deploy_drift_monitoring.sh        # CI/CD deployment script
@@ -301,13 +307,21 @@ automated-drift-monitoring-evidently/
 │       └── setup_quicksight_monitoring.py    # QuickSight dashboard setup
 ├── notebooks/
 │   ├── pipeline_execution.ipynb              # Interactive pipeline control notebook
-│   └── inference_monitoring.ipynb            # Monitoring & drift detection notebook
+│   ├── inference_monitoring.ipynb            # Monitoring & drift detection notebook
+│   └── inference_monitoring_with_pipeline.ipynb # Pipeline-based automated drift monitoring with Evidently
 ├── data/
 │   ├── creditcard_predictions_final.csv      # Training data (284K rows, 30 features)
 │   ├── creditcard_ground_truth.csv           # Ground truth labels
 │   └── creditcard_drifted.csv                # Drifted data for testing
 ├── docs/
+│   ├── generate_architecture_diagram.py      # Generates architecture_diagram.png with AWS icons
 │   └── guides/                               # Architecture diagrams and screenshots
+│       ├── architecture_diagram.png          # MLOps architecture (generated, Evidently version)
+│       ├── architecture_diagram.excalidraw   # Excalidraw source for architecture diagram
+│       ├── inference_monitoring_diagram.png   # Inference monitoring pipeline diagram
+│       ├── inference_monitoring_diagram_excalidraw.png # Excalidraw export
+│       ├── mermaid-diagram-mlflow-evidently.png # MLflow + Evidently monitoring flow
+│       └── screenshots/                      # SageMaker Studio screenshots
 ├── main.py                                   # CLI entry point
 ├── .env.example                              # Environment template
 └── README.md                                 # This file
@@ -328,6 +342,37 @@ automated-drift-monitoring-evidently/
 cp .env.example .env
 # Edit .env with your AWS settings
 ```
+
+### Upload Data Files to S3
+
+The CSV data files (`data/*.csv`) are excluded from git due to their size. On first run, these files must be available locally in the `data/` directory and then uploaded to S3 before the pipeline can use them.
+
+**Step 1: Verify local data files exist**
+
+```bash
+ls -lh data/*.csv
+# Expected files:
+#   creditcard_predictions_final.csv  (~50 MB, 284K rows, training data)
+#   creditcard_ground_truth.csv       (ground truth labels)
+#   creditcard_drifted.csv            (drifted data for testing)
+```
+
+If the files are missing, obtain them from the original data source and place them in the `data/` directory.
+
+**Step 2: Upload to S3**
+
+```bash
+# Preview what will be uploaded (dry run)
+python -m src.setup.upload_data_to_s3 --dry-run
+
+# Upload all CSV files to S3
+python -m src.setup.upload_data_to_s3
+
+# Upload a single file
+python -m src.setup.upload_data_to_s3 --file data/creditcard_predictions_final.csv
+```
+
+This uploads the CSV files to `s3://<DATA_S3_BUCKET>/fraud-detection/data/`. The S3 paths are used by the Athena data migration step (`main.py setup --migrate-data`) and by the inference monitoring notebook for baseline drift detection.
 
 ### Configuration (.env) - change these in .env to match your environment
 
@@ -384,12 +429,11 @@ json
 ### Setup Infrastructure
 
 ```bash
+# Upload CSV data to S3 (required before migration)
+python -m src.setup.upload_data_to_s3
+
 # Create S3 bucket, Athena database, Iceberg tables, and migrate CSV data
 python main.py setup --migrate-data
-
-# Setup IAM roles with required permissions
-python scripts/create_or_update_sagemaker_role.py - Not used
-python scripts/create_lambda_role.py - Not used
 ```
 
 This creates:
@@ -413,12 +457,12 @@ Add the following inline policy to your execution role to allow it to manage Lam
     "lambda:DeleteFunction",
     "lambda:InvokeFunction"
   ],
-  "Resource": "arn:aws:lambda:us-east-1:432913248921:function:fraud-detection-*"
+  "Resource": "arn:aws:lambda:us-east-1:YOUR_ACCOUNT:function:fraud-detection-*"
 },
 {
   "Effect": "Allow",
   "Action": "iam:PassRole",
-  "Resource": "arn:aws:iam::432913248921:role/*",
+  "Resource": "arn:aws:iam::YOUR_ACCOUNT:role/*",
   "Condition": {
     "StringEquals": {
       "iam:PassedToService": "lambda.amazonaws.com"
@@ -528,11 +572,11 @@ Update the SQS_URL in .env with the created SQS queue.
 
 ### Run Complete Pipeline
 
-**Option 1: Jupyter Notebook (Recommended) - Not used**
+**Option 1: Jupyter Notebook (Recommended)**
 
 ```bash
 # In SageMaker Studio, open:
-src/sagemaker/pipeline_execution.ipynb
+notebooks/pipeline_execution.ipynb
 
 # Run cells sequentially:
 # Cell 1-3: Setup and configuration
@@ -556,22 +600,21 @@ python main.py pipeline status --pipeline-name fraud-detection-pipeline
 ### Test Inference & Monitoring
 
 ```bash
-# 1. Open monitoring notebook - Not used
-# src/sagemaker/inference_monitoring.ipynb
+# 1. Open monitoring notebook
+# notebooks/inference_monitoring.ipynb
 
-# 2. Run inference tests
-# uv run main.py test --endpoint-name fraud-detector-v22 --num-samples 50
+# 2. Run inference tests (Cells 1-9 in the notebook)
+# Or via CLI:
+# uv run main.py test --endpoint-name fraud-detector-endpoint --num-samples 50
 
 # 3. Simulate ground truth (for development/testing)
-python scripts/simulate_ground_truth_from_athena.py --accuracy 0.85
+python -m src.monitoring.simulate_ground_truth_from_athena --accuracy 0.85
 
 # 4. Apply ground truth updates
-python scripts/update_ground_truth.py --mode batch
+python -m src.monitoring.update_ground_truth --mode batch
 
-# 5. Run workspace.ipynb to test drift and metrics logging
-
-# 5. Run monitoring & drift detection (Cells 21-34) - Not used
-# Generates 8 charts, calculates metrics, detects drift
+# 5. Run monitoring & drift detection (Cells 27-40 in inference_monitoring.ipynb)
+# Generates 8+ charts, calculates metrics, detects drift
 ```
 
 **Expected Output:**
@@ -741,7 +784,7 @@ SageMaker Studio > Deployments > Endpoints > Fraud Detector Endpoint > Playgroun
 
 ### Implementation Location
 
-- **Inference Handler (SQS):** `src/sagemaker/pipeline_steps/inference.py` — sends each prediction to SQS
+- **Inference Handler (SQS):** `src/pipeline/pipeline_steps/inference.py` — sends each prediction to SQS
 - **Lambda Consumer:** `lambda_inference_logger.py` — reads SQS batches, writes to Athena
 - **Setup Script:** `src/setup/setup_inference_logging.py` — creates SQS queue + Lambda + event source mapping
 - **Legacy Handler (Direct Athena):** `src/pipeline/inference_handler.py` — buffered awswrangler writes (alternative)
@@ -951,7 +994,7 @@ def capture_investigation_result(transaction_id, is_fraud, source):
 **Development/Testing (Current):**
 ```bash
 # Simulates realistic ground truth with configurable accuracy
-python scripts/simulate_ground_truth_from_athena.py --accuracy 0.85
+python -m src.monitoring.simulate_ground_truth_from_athena --accuracy 0.85
 ```
 
 This creates realistic confirmations:
@@ -964,10 +1007,10 @@ This creates realistic confirmations:
 
 ```bash
 # Batch mode: Process all pending updates
-python scripts/update_ground_truth.py --mode batch
+python -m src.monitoring.update_ground_truth --mode batch
 
 # Streaming mode: Process recent updates (last 24 hours)
-python scripts/update_ground_truth.py --mode streaming --window-hours 24
+python -m src.monitoring.update_ground_truth --mode streaming --window-hours 24
 ```
 
 This performs Athena MERGE to update `ground_truth` column in `inference_responses`.
@@ -976,10 +1019,10 @@ This performs Athena MERGE to update `ground_truth` column in `inference_respons
 
 ```bash
 # Monitor last 30 days
-python scripts/monitor_model_performance.py --days 30
+python -m src.monitoring.monitor_model_performance --days 30
 
 # With custom alert threshold
-python scripts/monitor_model_performance.py \
+python -m src.monitoring.monitor_model_performance \
   --days 30 \
   --alert-threshold 0.80 \
   --endpoint fraud-detector-prod
@@ -1004,7 +1047,13 @@ Overall Performance (last 30 days):
 
 ### Drift Detection Methods
 
+All drift detection is powered by [Evidently AI](https://www.evidentlyai.com/) (v0.7.x). The notebook and Lambda both use `evidently_reports.py` which wraps Evidently's `DataDriftPreset` and `ClassificationPreset`.
+
 #### Data Drift (Feature Distribution Changes)
+
+Evidently's `DataDriftPreset` automatically selects the appropriate statistical test per feature (KS for numeric, chi-square for categorical) and computes drift scores. The interactive HTML report includes per-feature distribution comparisons, PSI values, and statistical test results.
+
+**Legacy reference:** The `calculate_psi()` and `calculate_ks_statistic()` functions in `lambda_drift_monitor.py` are preserved as legacy examples showing how to compute these metrics manually without Evidently.
 
 **Population Stability Index (PSI):**
 
@@ -1247,28 +1296,21 @@ EVIDENTLY_DRIFT_THRESHOLD=0.2    # Overall drift threshold
 ### Interactive Monitoring (Notebook)
 
 ```bash
-# Open: src/sagemaker/inference_monitoring.ipynb
+# Open: notebooks/inference_monitoring.ipynb
 
 # Cell 16: Check ground truth coverage
-# Cell 31: Data Drift Detection - Parses JSON to extract all 30 features, calculates PSI
-# Cell 32: Generate Drift Visualizations - Creates charts for all drifted features
-# Cell 34-35: Model Drift Detection - Compares performance vs baseline
-# Cell 37: Log to MLflow - Uploads all metrics and charts
+# Cell 31: Data Drift Detection - Runs Evidently DataDriftPreset on all 30 features
+# Cell 32: Display interactive Evidently data drift report
+# Cell 34-35: Model Drift Detection - Runs Evidently ClassificationPreset
+# Cell 37: Log Evidently HTML reports and metrics to MLflow
 ```
 
-**Generated Charts (10 total):**
-1. ROC Curve - Model discrimination
-2. Precision-Recall Curve - Performance at different thresholds
-3. Confusion Matrix - Classification accuracy
-4. Prediction Distribution - Fraud rates over time
-5. Confidence Distribution - Model certainty analysis
-6. Latency Heatmap - Performance by hour/day
-7. PSI Heatmap - PSI scores for all 30 features (color-coded by severity)
-8. Feature Drift Comparison - Distribution histograms for top 6 drifted features
-9. Drift Summary Dashboard - 4-panel overview of drift metrics
-10. Model Performance Comparison - Training vs inference metrics
+**Evidently Reports Logged to MLflow:**
+1. `evidently_reports/data_drift_*.html` — Interactive data drift dashboard with per-feature PSI, KS, distribution comparisons
+2. `evidently_reports/classification_*.html` — Interactive classification dashboard with ROC curve, PR curve, confusion matrix, accuracy, F1
+3. `drift_reports/drift_summary_*.json` — Structured JSON summary
 
-All charts are logged to MLflow experiment: `credit-card-fraud-detection-monitoring`
+All reports are logged to MLflow experiment: `credit-card-fraud-detection-monitoring`
 
 ## Visualizations Quick Reference
 
@@ -1285,16 +1327,10 @@ All charts are logged to MLflow experiment: `credit-card-fraud-detection-monitor
 | ROC Curve | Model discrimination | MLflow Training Run | During evaluation |
 | Precision-Recall Curve | Performance at thresholds | MLflow Training Run | During evaluation |
 | Confusion Matrix | Classification accuracy | MLflow Training Run | During evaluation |
-| **Monitoring** |
-| ROC Curve (Inference) | Runtime performance | MLflow Monitoring Exp | inference_monitoring.ipynb Cell 21 |
-| Confusion Matrix (Inference) | Prediction accuracy | MLflow Monitoring Exp | Cell 23 |
-| Prediction Distribution | Fraud rate trends | MLflow Monitoring Exp | Cell 25 |
-| Confidence Distribution | Model certainty | MLflow Monitoring Exp | Cell 27 |
-| Latency Heatmap | Performance patterns | MLflow Monitoring Exp | Cell 29 |
-| PSI Heatmap (All 30 Features) | Feature drift scores | MLflow Monitoring Exp | Cell 31-32 (parses JSON) |
-| Feature Drift Comparison | Top 6 drifted distributions | MLflow Monitoring Exp | Cell 32 |
-| Drift Summary Dashboard | Overall drift metrics | MLflow Monitoring Exp | Cell 32 |
-| Model Performance Comparison | Training vs inference | MLflow Monitoring Exp | Cell 34-35 |
+| **Monitoring (Evidently)** |
+| Data Drift HTML Report | Per-feature drift analysis (PSI, KS, distributions) | MLflow `evidently_reports/` | inference_monitoring.ipynb Cell 37 |
+| Classification HTML Report | Model performance (ROC, PR, confusion matrix, F1) | MLflow `evidently_reports/` | inference_monitoring.ipynb Cell 37 |
+| Drift Summary JSON | Structured drift summary | MLflow `drift_reports/` | inference_monitoring.ipynb Cell 37 |
 
 **Accessing in MLflow:**
 ```
@@ -1304,12 +1340,10 @@ All charts are logged to MLflow experiment: `credit-card-fraud-detection-monitor
    - Monitoring: credit-card-fraud-detection-monitoring
 3. Click on run
 4. Scroll to "Artifacts" section
-5. Charts available as PNG files:
-   - drift_charts/psi_heatmap.png
-   - drift_charts/feature_drift_comparison.png
-   - drift_charts/drift_summary_dashboard.png
-   - model_drift_charts/performance_comparison.png
-   - model_drift_charts/performance_degradation.png
+5. Evidently HTML reports available under:
+   - evidently_reports/data_drift_*.html (open in browser for interactive dashboard)
+   - evidently_reports/classification_*.html (open in browser for interactive dashboard)
+   - drift_reports/drift_summary_*.json
 ```
 
 ### Baseline Data for Drift Detection
@@ -1406,7 +1440,7 @@ EventBridge Rule → Lambda Function → SNS Topic → Email
 ### Quick Setup
 
 **Option 1: Using Notebook (Recommended)**
-1. Open `src/sagemaker/inference_monitoring.ipynb`
+1. Open `notebooks/inference_monitoring.ipynb`
 2. Navigate to **Section 6: Automated Drift Monitoring Setup**
 3. Run cells 6.1-6.3 to deploy infrastructure
 4. Confirm email subscription
@@ -1418,12 +1452,12 @@ export ATHENA_DATABASE="fraud_detection"
 export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 export ATHENA_OUTPUT_S3="s3://fraud-detection-data-lake-skoppar-${AWS_ACCOUNT_ID}/athena-query-results/"
 
-bash src/scripts/deploy_drift_monitoring.sh
+bash src/setup/deploy_drift_monitoring.sh
 ```
 
 **Option 3: Interactive Setup**
 ```bash
-python src/scripts/setup_drift_monitoring.py
+python src/setup/setup_drift_monitoring.py
 ```
 
 ### What Gets Created
@@ -1436,29 +1470,30 @@ python src/scripts/setup_drift_monitoring.py
 ### Monitoring Capabilities
 
 **Data Drift Detection:**
-- **Metric**: Population Stability Index (PSI)
+- **Engine**: Evidently DataDriftPreset (KS, PSI, and other statistical tests)
 - **Scope**: All 30 training features
-- **Threshold**: PSI ≥ 0.2 (configurable)
+- **Output**: Interactive HTML report + per-column drift scores
 - **Method**: Compares recent 24h inference data to training baseline
 
 **Model Performance Drift:**
-- **Metric**: ROC-AUC degradation
-- **Threshold**: >5% degradation (configurable)
+- **Engine**: Evidently ClassificationPreset (accuracy, F1, ROC, PR, confusion matrix)
+- **Threshold**: >5% ROC-AUC degradation (configurable)
 - **Method**: Compares current performance to baseline (0.92)
 - **Requires**: Ground truth labels for predictions
 
 **MLflow Integration:**
-- **Automatic Logging**: All drift metrics logged to MLflow on each check
+- **Automatic Logging**: All drift metrics and Evidently HTML reports logged to MLflow on each check
 - **Experiment**: `fraud-detection-drift-monitoring`
 - **Metrics Logged**:
-  - Individual PSI values for all 30 features (`psi_<feature_name>`)
-  - Aggregate drift statistics (avg PSI, max PSI, drift percentage)
+  - Per-feature drift scores (`drift_score_<feature_name>`)
+  - Aggregate drift statistics (drifted_columns_count, drifted_columns_share)
   - Model performance metrics (ROC-AUC, accuracy, precision, recall)
+  - Evidently classification metrics (`evidently_accuracy`, `evidently_f1`, etc.)
   - Sample sizes and detection flags
-- **Visualizations**:
-  - PSI bar chart showing drift by feature (top 15)
-  - Model performance comparison chart (baseline vs current)
-- **Artifacts**: JSON drift summary report with full details
+- **Artifacts**:
+  - `evidently_reports/data_drift_*.html` — Interactive data drift dashboard
+  - `evidently_reports/classification_*.html` — Interactive classification dashboard
+  - `drift_reports/drift_summary_*.json` — Structured JSON summary
 - **Configuration**: Set `MLFLOW_TRACKING_URI` environment variable in Lambda
 
 ### Email Alert Example
@@ -1468,25 +1503,25 @@ python src/scripts/setup_drift_monitoring.py
 ML MODEL DRIFT ALERT
 ================================================================================
 Time: 2026-02-24 02:00:15
+Detection Engine: Evidently AI
 
-🔴 DATA DRIFT DETECTED
+🔴 DATA DRIFT DETECTED (Evidently DataDriftPreset)
 Features Analyzed: 30
 Drifted Features: 5 (16.7%)
-Average PSI: 0.0842
-Max PSI: 0.2145
+Drifted Columns Share: 16.7%
 
-Top Drifted Features:
-  - transaction_amount: PSI=0.2145
-  - customer_age: PSI=0.1523
-  - distance_from_home_km: PSI=0.1205
+Top Drifted Features (by drift score):
+  - transaction_amount: drift_score=0.0012
+  - customer_age: drift_score=0.0034
+  - distance_from_home_km: drift_score=0.0089
 
-🔴 MODEL PERFORMANCE DRIFT DETECTED
+🔴 MODEL PERFORMANCE DRIFT DETECTED (Evidently ClassificationPreset)
 Baseline ROC-AUC: 0.9200
 Current ROC-AUC: 0.5713
 Degradation: 0.3487 (37.9%)
 
 RECOMMENDED ACTIONS:
-1. Review drift analysis in MLflow
+1. Review Evidently HTML reports in MLflow monitoring experiment
 2. Investigate root cause
 3. Consider retraining with recent data
 4. Review decision thresholds
@@ -1535,12 +1570,12 @@ aws logs tail /aws/lambda/fraud-detection-drift-monitor --follow
 
 ### Files
 
-- `src/scripts/lambda_drift_monitor.py` - Lambda function code
-- `src/scripts/lambda_inference_logger.py` - Lambda inference logger
-- `src/scripts/generate_drift_dataset.py` - Generate test drift data
-- `src/scripts/setup_drift_monitoring.py` - Interactive setup
-- `src/scripts/deploy_drift_monitoring.sh` - CI/CD deployment script
-- `src/sagemaker/inference_monitoring.ipynb` - Section 6 (setup cells)
+- `src/monitoring/lambda_drift_monitor.py` - Lambda function code
+- `src/monitoring/lambda_inference_logger.py` - Lambda inference logger
+- `src/monitoring/generate_drift_dataset.py` - Generate test drift data
+- `src/setup/setup_drift_monitoring.py` - Interactive setup
+- `src/setup/deploy_drift_monitoring.sh` - CI/CD deployment script
+- `notebooks/inference_monitoring.ipynb` - Section 6 (setup cells)
 
 ### Thresholds Explained
 
@@ -1677,7 +1712,7 @@ aws sns delete-topic --topic-arn arn:aws:sns:us-east-1:{account}:fraud-detection
 - Lightweight table for merging confirmed labels back into `inference_responses`
 - Schema: inference_id, actual_fraud, confirmation_timestamp, confirmation_source, investigation_notes
 - **Populated by:** Ground truth simulator (dev/test) or fraud investigation systems (production)
-- **Consumed by:** `scripts/update_ground_truth.py` which runs an Athena MERGE to update the `ground_truth` column in `inference_responses`
+- **Consumed by:** `src/monitoring/update_ground_truth.py` which runs an Athena MERGE to update the `ground_truth` column in `inference_responses`
 - JOINs on `inference_id` (not `transaction_id`)
 
 **ground_truth (not used in current PoC):**
@@ -1815,14 +1850,14 @@ Your model expects these exact 30 features in JSON format:
 ### Setup & Infrastructure
 
 ```bash
+# Upload CSV data to S3 (required before migration, files not in git)
+python -m src.setup.upload_data_to_s3
+
 # Create all infrastructure (S3, Athena DB, tables)
 python main.py setup --migrate-data
 
 # Just create infrastructure (no data migration)
 python main.py setup
-
-# Migrate CSV data to Athena
-python scripts/migrate_data_to_athena.py --table training_data
 ```
 
 ### Pipeline Operations
@@ -1851,24 +1886,24 @@ python main.py pipeline delete --pipeline-name fraud-detection-pipeline
 
 ```bash
 # Simulate ground truth (development)
-python scripts/simulate_ground_truth_from_athena.py --accuracy 0.85 [--limit 1000]
+python -m src.monitoring.simulate_ground_truth_from_athena --accuracy 0.85 [--limit 1000]
 
 # Apply ground truth updates
-python scripts/update_ground_truth.py --mode batch
-python scripts/update_ground_truth.py --mode streaming --window-hours 24
+python -m src.monitoring.update_ground_truth --mode batch
+python -m src.monitoring.update_ground_truth --mode streaming --window-hours 24
 
 # Monitor performance
-python scripts/monitor_model_performance.py --days 30 [--alert-threshold 0.80]
+python -m src.monitoring.monitor_model_performance --days 30 [--alert-threshold 0.80]
 ```
 
 ### IAM Roles
 
 ```bash
 # Create/update SageMaker execution role
-python scripts/create_or_update_sagemaker_role.py
+python -m src.setup.create_or_update_sagemaker_role
 
 # Create Lambda execution role
-python scripts/create_lambda_role.py
+python -m src.setup.create_lambda_role
 ```
 
 ## Troubleshooting
@@ -1961,7 +1996,7 @@ MlflowException: Unable to connect to tracking server
    ```
 2. Verify IAM role has MLflow access:
    ```bash
-   python scripts/create_or_update_sagemaker_role.py
+   python -m src.setup.create_or_update_sagemaker_role
    ```
 
 ---
@@ -2054,7 +2089,7 @@ AccessDeniedException: User is not authorized to perform: athena:StartQueryExecu
 **Solution:**
 ```bash
 # Update SageMaker role with all required permissions
-python scripts/create_or_update_sagemaker_role.py
+python -m src.setup.create_or_update_sagemaker_role
 
 # Grants access to:
 # - S3 (read/write)
@@ -2077,7 +2112,7 @@ SYNTAX_ERROR: line 1:8: Column 'cnt' cannot be resolved
 1. Corrupted metadata in S3
 2. Clean up corrupted results:
    ```bash
-   ./scripts/cleanup_corrupted_athena_results.sh
+   ./src/setup/cleanup_corrupted_athena_results.sh
    ```
 3. Or manually delete:
    ```bash
@@ -2107,12 +2142,11 @@ SYNTAX_ERROR: line 1:8: Column 'cnt' cannot be resolved
 
 ```bash
 # One-time setup
+python -m src.setup.upload_data_to_s3
 python main.py setup --migrate-data
-python scripts/create_or_update_sagemaker_role.py
-python scripts/create_lambda_role.py
 ```
 
-**Result:** S3 bucket, Athena database, Iceberg tables created, CSV data migrated
+**Result:** S3 bucket, Athena database, Iceberg tables created, CSV data uploaded and migrated
 
 ---
 
@@ -2122,7 +2156,7 @@ python scripts/create_lambda_role.py
 
 ```bash
 # In SageMaker Studio, open:
-src/sagemaker/pipeline_execution.ipynb
+notebooks/pipeline_execution.ipynb
 
 # Run sequentially:
 # - Cells 1-3: Setup and configuration
@@ -2147,7 +2181,7 @@ python main.py pipeline start --pipeline-name fraud-detection-pipeline --wait
 
 ### 3. Run Inference & Monitoring
 
-**Open:** `src/sagemaker/inference_monitoring.ipynb`
+**Open:** `notebooks/inference_monitoring.ipynb`
 
 This notebook handles the complete inference and monitoring workflow:
 
@@ -2186,7 +2220,7 @@ This notebook handles the complete inference and monitoring workflow:
 # - Configurable accuracy (default 85%)
 
 # Or via CLI:
-python scripts/simulate_ground_truth_from_athena.py --accuracy 0.85
+python -m src.monitoring.simulate_ground_truth_from_athena --accuracy 0.85
 ```
 
 **For Production:**
@@ -2205,7 +2239,7 @@ Replace simulation with actual fraud investigation system that writes to `ground
 # Cell 19: Apply updates using notebook
 
 # Or via CLI:
-python scripts/update_ground_truth.py --mode batch
+python -m src.monitoring.update_ground_truth --mode batch
 ```
 
 **Result:** `inference_responses.ground_truth` column populated via MERGE
@@ -2225,24 +2259,25 @@ python scripts/update_ground_truth.py --mode batch
 # Cell 27: Initialize performance monitor
 # Cell 28: Generate performance report
 # Cell 29: Display metrics (ROC-AUC, precision, recall, F1)
-# Cell 32: Run data drift detection (PSI, KS tests)
-# Cell 33: Visualize drift (heatmaps, distributions)
-# Cell 35: Run model drift detection
-# Cell 36: Visualize model performance
-# Cell 38: Log all results and charts to MLflow
+# Cell 32: Run Evidently data drift detection (DataDriftPreset)
+# Cell 33: Display interactive Evidently data drift report
+# Cell 35: Run Evidently model drift detection (ClassificationPreset)
+# Cell 36: Display interactive Evidently classification report
+# Cell 38: Log Evidently HTML reports and metrics to MLflow
 # Cell 40: Check for alerts (performance degradation)
 ```
 
 **Result:**
 - Performance metrics calculated (where ground truth exists)
-- Data drift detected (PSI, Chi-Square, KS tests)
-- Model drift detected (metric degradation)
-- 8+ charts generated and uploaded to MLflow
+- Evidently data drift report generated (PSI, KS, distribution comparisons)
+- Evidently classification report generated (ROC, PR, confusion matrix, F1)
+- Interactive HTML reports logged to MLflow as artifacts
+- Per-feature drift scores and classification metrics logged as MLflow metrics
 - Alerts if performance degraded >5%
 
 **Alternative: CLI monitoring (no charts):**
 ```bash
-python scripts/monitor_model_performance.py --days 30
+python -m src.monitoring.monitor_model_performance --days 30
 ```
 
 ---
@@ -2260,7 +2295,7 @@ python scripts/monitor_model_performance.py --days 30
 
 **Charts available:**
 - Training: ROC curve, confusion matrix, feature importance
-- Monitoring: Drift heatmaps, performance timeline, prediction distributions
+- Monitoring: Evidently interactive HTML reports (data drift dashboard, classification dashboard)
 
 ---
 
@@ -2283,14 +2318,15 @@ python main.py pipeline start --pipeline-name fraud-detection-pipeline --wait
 
 ---
 
-## Summary: Two-Notebook Workflow
+## Summary: Notebook Workflow
 
-The entire PoC is driven by **two notebooks** in SageMaker Studio. Each notebook cell maps to a CLI command (see [Next Steps](#next-steps) for CI/CD equivalents).
+The entire PoC is driven by **three notebooks** in SageMaker Studio. Each notebook cell maps to a CLI command (see [Next Steps](#next-steps) for CI/CD equivalents).
 
 | Notebook | Purpose | Key Cells |
 |----------|---------|-----------|
 | **`pipeline_execution.ipynb`** | Training, evaluation, model registration, endpoint deployment | Cells 1-5 |
 | **`inference_monitoring.ipynb`** | Inference testing, ground truth, drift detection, CloudWatch alarms | Cells 1-40 |
+| **`inference_monitoring_with_pipeline.ipynb`** | Pipeline-based automated monitoring: creates a SageMaker Pipeline (`fraud-detection-monitoring-pipeline`) with steps for ground truth simulation, drift computation, MLflow logging, Athena writes, threshold checks, and alarm creation | Cells 1-end |
 
 **Workflow:**
 
@@ -2301,6 +2337,9 @@ The entire PoC is driven by **two notebooks** in SageMaker Studio. Each notebook
 5. **CloudWatch Alarms:** `inference_monitoring.ipynb` → Cell 40 (publish metrics, create alarms & dashboard)
 6. **MLflow Review:** SageMaker Studio → Partner AI Apps → MLflow
 7. **Retrain:** `pipeline_execution.ipynb` → Cell 5 (re-execute pipeline)
+
+**Alternative: Pipeline-Based Monitoring**
+`inference_monitoring_with_pipeline.ipynb` wraps steps 3-5 into a single SageMaker Pipeline (`fraud-detection-monitoring-pipeline`) with automated steps: SimulateGroundTruth → ComputeDrift → LogToMLflow → WriteToAthena → CheckThresholds → CreateAlarms. Use this for scheduled, hands-off monitoring.
 
 **All in SageMaker Studio — no CLI needed for development workflow.**
 
@@ -2383,7 +2422,7 @@ Each version includes:
 # If new model performs poorly:
 
 # 1. Check recent performance
-python scripts/monitor_model_performance.py --days 7
+python -m src.monitoring.monitor_model_performance --days 7
 
 # 2. If degraded, rollback to previous version in MLflow UI:
 #    - Mark current version as "Archived"
@@ -2407,9 +2446,9 @@ Each notebook cell has a direct CLI equivalent. For CI/CD pipelines, replace not
 | Create Pipeline | `pipeline_execution.ipynb` Cell 4 | `python main.py pipeline create --pipeline-name fraud-detection-pipeline` |
 | Train & Deploy | `pipeline_execution.ipynb` Cell 5 | `python main.py pipeline start --pipeline-name fraud-detection-pipeline --wait` |
 | Test Inference | `inference_monitoring.ipynb` Cells 6-9 | `python main.py test --endpoint-name fraud-detector-endpoint --num-samples 100` |
-| Simulate Ground Truth | `inference_monitoring.ipynb` Cell 19 | `python scripts/simulate_ground_truth_from_athena.py --accuracy 0.85` |
-| Apply Ground Truth | `inference_monitoring.ipynb` Cell 24 | `python scripts/update_ground_truth.py --mode batch` |
-| Monitor Drift | `inference_monitoring.ipynb` Cells 26-39 | `python scripts/monitor_model_performance.py --days 30` |
+| Simulate Ground Truth | `inference_monitoring.ipynb` Cell 19 | `python -m src.monitoring.simulate_ground_truth_from_athena --accuracy 0.85` |
+| Apply Ground Truth | `inference_monitoring.ipynb` Cell 24 | `python -m src.monitoring.update_ground_truth --mode batch` |
+| Monitor Drift | `inference_monitoring.ipynb` Cells 26-39 | `python -m src.monitoring.monitor_model_performance --days 30` |
 
 ### Scheduled Monitoring
 
@@ -2448,7 +2487,7 @@ MIT License - See LICENSE file for details
 
 ---
 
-**Documentation Version:** 2.1
-**Last Updated:** 2026-02-21
+**Documentation Version:** 3.0
+**Last Updated:** 2026-03-18
 **Pipeline Version:** 1.0
 **Model Version:** xgboost-fraud-detector v1+

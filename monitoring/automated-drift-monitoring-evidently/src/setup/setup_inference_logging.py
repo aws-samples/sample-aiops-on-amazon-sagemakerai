@@ -38,7 +38,7 @@ def setup_lambda_consumer(role_arn, queue_arn):
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, 'w') as zf:
         # Lambda logger is at project root, need to go up 3 levels from src/scripts/
-        lambda_file = Path(__file__).parent / 'lambda_inference_logger.py'
+        lambda_file = Path(__file__).parent.parent / 'monitoring' / 'lambda_inference_logger.py'
         if not lambda_file.exists():
             raise FileNotFoundError(f"Lambda logger not found at: {lambda_file}")
         zf.write(lambda_file, 'lambda_inference_logger.py')

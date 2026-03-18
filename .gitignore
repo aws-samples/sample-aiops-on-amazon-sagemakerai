@@ -48,3 +48,6 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db
+
+# Downloaded icons cache (for diagram generation)
+monitoring/automated-drift-monitoring-evidently/docs/icons/

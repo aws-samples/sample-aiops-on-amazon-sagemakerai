@@ -25,7 +25,7 @@ This directory contains screenshots for documentation and tutorials.
    ```
 
 **Referenced in:**
-- `src/sagemaker/inference_monitoring.ipynb` - Cell 8
+- `notebooks/inference_monitoring.ipynb` - Cell 8
 - `README.md` - "Testing in SageMaker Studio Endpoint Playground" section
 
 **How to capture:**
