@@ -211,6 +211,8 @@ LAMBDA_EXEC_ROLE: str = _get("lambda", "exec_role", "LAMBDA_EXEC_ROLE", "")
 # Data File Paths
 # ===================================================================
 DATA_DIR: Path = _PROJECT_ROOT / "data"
+
+# Local CSV paths (used only by upload_data_to_s3.py)
 CSV_TRAINING_DATA: Path = _PROJECT_ROOT / _get(
     "data", "csv_training_data", "CSV_TRAINING_DATA",
     "data/creditcard_predictions_final.csv",
@@ -218,6 +220,26 @@ CSV_TRAINING_DATA: Path = _PROJECT_ROOT / _get(
 CSV_GROUND_TRUTH: Path = _PROJECT_ROOT / _get(
     "data", "csv_ground_truth", "CSV_GROUND_TRUTH",
     "data/creditcard_ground_truth.csv",
+)
+CSV_DRIFTED_DATA: Path = _PROJECT_ROOT / _get(
+    "data", "csv_drifted_data", "CSV_DRIFTED_DATA",
+    "data/creditcard_drifted.csv",
+)
+
+# S3 data paths — pipeline and Athena code should use these
+_s3_data_base = f"s3://{DATA_S3_BUCKET}/{S3_PREFIX}data" if DATA_S3_BUCKET else ""
+
+S3_TRAINING_DATA: str = _get(
+    "data", "s3_training_data", "S3_TRAINING_DATA",
+    f"{_s3_data_base}/creditcard_predictions_final.csv" if _s3_data_base else "",
+)
+S3_GROUND_TRUTH: str = _get(
+    "data", "s3_ground_truth", "S3_GROUND_TRUTH",
+    f"{_s3_data_base}/creditcard_ground_truth.csv" if _s3_data_base else "",
+)
+S3_DRIFTED_DATA: str = _get(
+    "data", "s3_drifted_data", "S3_DRIFTED_DATA",
+    f"{_s3_data_base}/creditcard_drifted.csv" if _s3_data_base else "",
 )
 
 # ===================================================================
