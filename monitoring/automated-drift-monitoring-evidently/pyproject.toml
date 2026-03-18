@@ -1,5 +1,5 @@
 [project]
-name = "pure-storage-mlflow"
+name = "automated-drift-monitoring-evidently"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"

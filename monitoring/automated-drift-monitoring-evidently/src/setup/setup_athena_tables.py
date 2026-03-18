@@ -38,8 +38,8 @@ import boto3
 from src.config.config import (
     DATA_S3_BUCKET,
     ATHENA_DATABASE,
-    CSV_TRAINING_DATA,
-    CSV_GROUND_TRUTH,
+    S3_TRAINING_DATA,
+    S3_GROUND_TRUTH,
 )
 from src.pipeline.athena.iceberg_manager import IcebergManager
 from src.pipeline.athena.schema_definitions import list_all_tables
@@ -189,25 +189,26 @@ def migrate_csv_data(manager: IcebergManager) -> dict:
         s3_output=manager.s3_output,
     )
 
-    # Migration mappings: CSV file -> table name
+    # Migration mappings: S3 data path -> table name
     migrations = [
-        (CSV_TRAINING_DATA, 'training_data'),
-        (CSV_GROUND_TRUTH, 'ground_truth'),
+        (S3_TRAINING_DATA, 'training_data'),
+        (S3_GROUND_TRUTH, 'ground_truth'),
     ]
 
-    logger.info("Migrating CSV data to Athena...")
+    logger.info("Migrating data from S3 to Athena Iceberg tables...")
 
-    for csv_path, table_name in migrations:
+    for s3_path, table_name in migrations:
         try:
-            if not csv_path.exists():
-                logger.warning(f"CSV file not found: {csv_path}, skipping")
-                results[table_name] = {'success': False, 'error': 'File not found'}
+            if not s3_path:
+                logger.warning(f"S3 path not configured for {table_name}, skipping. "
+                               "Run upload_data_to_s3.py first and set S3 data paths in config.yaml")
+                results[table_name] = {'success': False, 'error': 'S3 path not configured'}
                 continue
 
-            logger.info(f"Migrating {csv_path.name} -> {table_name}")
+            logger.info(f"Migrating {s3_path} -> {table_name}")
 
             success, stats = migrator.migrate_csv_to_iceberg(
-                csv_path=str(csv_path),
+                csv_path=s3_path,
                 table_name=table_name,
                 chunk_size=10000,
             )

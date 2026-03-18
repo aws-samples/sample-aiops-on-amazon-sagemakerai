@@ -7,11 +7,17 @@ the MLflow inference monitoring system's ability to detect distribution changes.
 
 import pandas as pd
 import numpy as np
+import sys
 from pathlib import Path
 
+# Ensure project root is on sys.path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+from src.config.config import CSV_TRAINING_DATA, CSV_DRIFTED_DATA
+
 # Configuration
-ORIGINAL_DATA_PATH = Path("data/creditcard_predictions_final.csv")
-DRIFTED_DATA_PATH = Path("data/creditcard_drifted.csv")
+ORIGINAL_DATA_PATH = CSV_TRAINING_DATA
+DRIFTED_DATA_PATH = CSV_DRIFTED_DATA
 NUM_SAMPLES = 5000
 RANDOM_STATE = 123
 

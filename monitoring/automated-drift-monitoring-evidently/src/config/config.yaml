@@ -97,11 +97,18 @@ lambda:
   exec_role: ""                  # ARN of the Lambda execution role
 
 # ---------------------------------------------------------------------------
-# Data file paths (relative to project root)
+# Data file paths
 # ---------------------------------------------------------------------------
+# Local paths are relative to project root (used only by upload_data_to_s3.py).
+# All pipeline/Athena code should read from S3 paths below.
 data:
   csv_training_data: "data/creditcard_predictions_final.csv"
   csv_ground_truth: "data/creditcard_ground_truth.csv"
+  csv_drifted_data: "data/creditcard_drifted.csv"
+  # S3 locations (populated automatically from bucket + prefix if left empty)
+  s3_training_data: ""           # s3://bucket/prefix/data/creditcard_predictions_final.csv
+  s3_ground_truth: ""            # s3://bucket/prefix/data/creditcard_ground_truth.csv
+  s3_drifted_data: ""            # s3://bucket/prefix/data/creditcard_drifted.csv
 
 # ---------------------------------------------------------------------------
 # Training features and target
