@@ -4,14 +4,45 @@ Production-grade ML pipeline for credit card fraud detection using AWS SageMaker
 
 ## Overview
 
-This project implements a complete ML lifecycle for fraud detection:
+**Why This Project Matters**
+
+Machine learning models degrade over time. Production models face data drift (feature distributions change), concept drift (prediction-target relationships shift), and performance degradation as the real world evolves. Without continuous monitoring, ML systems fail silently — making increasingly poor decisions while appearing healthy on dashboards. 
+
+This solution addresses a critical gap: **lack of production-ready inference monitoring options** in the ML ecosystem. While training pipelines are well-served by managed platforms, comprehensive inference monitoring with drift detection, ground truth integration, and automated alerting requires custom solutions or expensive enterprise platforms.
+
+This is especially critical for fraud detection, where:
+- **Fraudsters adapt**: Attack patterns evolve to evade detection
+- **Customer behavior shifts**: Economic conditions, seasonal trends, new payment methods
+- **Delayed ground truth**: Fraud confirmation takes days or weeks, making real-time accuracy impossible to measure
+- **High stakes**: False positives annoy customers, false negatives cost money
+
+**The ML Governance Gap**
+
+Most organizations have robust training pipelines but lack production inference monitoring. They deploy models and hope for the best. When performance degrades, they discover it through business metrics (customer complaints, financial losses) rather than automated alerts. By then, damage is done.
+
+Existing solutions are inadequate:
+- **Managed platforms** cost $25K+/year and lock you into proprietary systems
+- **SageMaker Model Monitor** costs $200+/month, lacks Evidently integration, and doesn't support serverless endpoints
+- **Custom solutions** require months of engineering effort to build drift detection, ground truth integration, and alerting
+
+**This Project's Solution**
+
+A ** Open-source MLOps system** that establishes automated monitoring and governance for ML inference:
 
 - **Training Pipeline:** SageMaker Pipelines with automated preprocessing, training (XGBoost), evaluation, and deployment
 - **Experiment Tracking:** MLflow for model versioning, metrics, and artifact management
 - **Data Lake:** Athena Iceberg tables for training data and inference logging
-- **Custom Inference Handler:** Automatic logging of all predictions with buffered async writes
-- **Monitoring & Drift Detection:** Continuous model performance tracking with Evidently-powered interactive reports
-- **Ground Truth Integration:** Asynchronous ground truth capture and model retraining triggers
+- **Custom Inference Handler:** Automatic logging of all predictions with buffered async writes (zero latency impact)
+- **Monitoring & Drift Detection:** Continuous model performance tracking with Evidently-powered interactive reports, automated daily checks, and SNS email alerts
+- **Ground Truth Integration:** Asynchronous ground truth capture with Athena MERGE updates for delayed fraud confirmations
+- **Governance Dashboard:** QuickSight dashboard with automated daily refresh showing inference trends, drift history, and model performance
+
+**Key Benefits:**
+- **Cost Efficient:** $30/month vs. $200+/month for managed alternatives (85% savings)
+- **Portable:** Open-source SDKs (MLflow, Evidently, Pandas) run anywhere — AWS, GCP, Azure, on-prem
+- **Production Ready:** Handles real-world ML challenges (delayed ground truth, data drift, concept drift, alerting)
+- **Automated:** EventBridge schedules drift checks at 2 AM, QuickSight refreshes at 3 AM — no manual intervention
+- **Comprehensive:** Training, inference, monitoring, drift detection, and governance in one integrated system
 
 ## Architecture Diagram
 
@@ -88,147 +119,6 @@ MLflow serves as the **unified monitoring dashboard** where all monitoring workf
 ✅ **Zero Inference Latency** - Async logging doesn't impact prediction response time
 ✅ **Cost-Efficient** - $5/month Lambda + $25/month Athena vs. $200+/month for SageMaker Model Monitor
 
-## Complete Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                            TRAINING PHASE                                       │
-│                                                                                 │
-│  ┌───────────────────────────────────────────────────────────────────────────┐  │
-│  │                      SageMaker Pipeline                                   │  │
-│  │  ┌──────────┐   ┌─────────┐   ┌──────────┐   ┌──────────┐   ┌────────┐    │  │
-│  │  │Preprocess│ → │  Train  │ → │ Evaluate │ → │ Register │ → │ Deploy │    │  │
-│  │  │ (Athena) │   │(XGBoost)│   │(Quality) │   │  (MLflow)│   │(Lambda)│    │  │
-│  │  └──────────┘   └─────────┘   └──────────┘   └──────────┘   └────────┘    │  │
-│  └───────────────────────────────────────────────────────────────────────────┘  │
-│         ↓                ↓               ↓                ↓                     │
-│  ┌─────────────────────────────────────────────────────────────────────────┐    │
-│  │                      MLflow Tracking Server                             │    │
-│  │   • Experiments  • Model Registry  • Metrics  • Artifacts  • Charts     │    │
-│  └─────────────────────────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                      ↓
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                          INFERENCE PHASE (T+0)                                  │
-│                                                                                 │
-│  Application → [SageMaker Endpoint] → Prediction Response                       │
-│                  (Custom Handler)            ↓                                  │
-│                       │                 {prediction, probabilities}             │
-│                       │                                                         │
-│                       ▼                                                         │
-│               ┌───────────────┐                                                 │
-│               │  SQS Queue    │  ← Fire-and-forget (per-prediction send)        │
-│               │ (fraud-       │                                                 │
-│               │  inference-   │                                                 │
-│               │  logs)        │                                                 │
-│               └───────┬───────┘                                                 │
-│                       │  Batch: 10 messages or 30s window                       │
-│                       ▼                                                         │
-│               ┌───────────────┐                                                 │
-│               │    Lambda     │  ← Triggered by SQS event                       │
-│               │  (fraud-      │                                                 │
-│               │  inference-   │  Builds INSERT INTO statement                   │
-│               │  log-consumer)│  from batched SQS records                       │
-│               └───────┬───────┘                                                 │
-│                       ▼                                                         │
-│  ┌─────────────────────────────────────────────────────────────────────────┐    │
-│  │              Athena: inference_responses (Iceberg)                      │    │
-│  │   • inference_id, prediction, probability_fraud                         │    │
-│  │   • ground_truth=NULL (awaiting confirmation)                           │    │
-│  │   • latency_ms, confidence_score, transaction_context                   │    │
-│  └─────────────────────────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                      ↓
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                   GROUND TRUTH CAPTURE (T+1 to T+30 days)                       │
-│                                                                                 │
-│  *** PRODUCTION: Replace with actual business processes ***                     │
-│  - Fraud investigation outcomes                                                 │
-│  - Chargeback notifications                                                     │
-│  - Customer complaints                                                          │
-│  - Merchant reports                                                             │
-│                                                                                 │
-│  *** DEVELOPMENT: Simulation for testing ***                                    │
-│  src/drift_monitoring/simulate_ground_truth_from_athena.py                            │
-│  (Creates realistic ground truth with configurable accuracy)                    │
-│                       ↓                                                         │
-│  ┌─────────────────────────────────────────────────────────────────────────┐    │
-│  │            Athena: ground_truth_updates (Iceberg)                       │    │
-│  │   • inference_id, actual_fraud, confirmation_timestamp                  │    │
-│  │   • confirmation_source, investigation_notes                            │    │
-│  └─────────────────────────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                      ↓
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                      GROUND TRUTH UPDATE (Batch Job)                            │
-│                                                                                 │
-│  src/drift_monitoring/update_ground_truth.py --mode batch                             │
-│                       ↓                                                         │
-│  Athena MERGE: inference_responses ← ground_truth_updates                       │
-│  (Updates ground_truth column for confirmed transactions)                       │
-│                       ↓                                                         │
-│  ┌─────────────────────────────────────────────────────────────────────────┐    │
-│  │         inference_responses (with ground truth populated)               │    │
-│  │   WHERE ground_truth IS NOT NULL                                        │    │
-│  └─────────────────────────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                      ↓
-┌────────────────────────────────────────────────────────────────────────────────┐
-│                    MONITORING & DRIFT DETECTION (Continuous)                   │
-│                                                                                │
-│  src/drift_monitoring/monitor_model_performance.py --days 30                         │
-│                       ↓                                                        │
-│  ┌─────────────────────────────────────────────────────────────────────────┐   │
-│  │                    Performance Metrics                                  │   │
-│  │   • ROC-AUC, PR-AUC (where ground_truth IS NOT NULL)                    │   │
-│  │   • Precision, Recall, F1-Score                                         │   │
-│  │   • Confusion Matrix                                                    │   │
-│  │   • Ground Truth Coverage: % with confirmed labels                      │   │
-│  └─────────────────────────────────────────────────────────────────────────┘   │
-│                       ↓                                                        │
-│  ┌─────────────────────────────────────────────────────────────────────────┐   │
-│  │                     Data Drift Detection                                │   │
-│  │   • Evidently DataDriftPreset: KS, PSI, and other statistical tests     │   │
-│  │   • Per-column drift scores with statistical significance               │   │
-│  │   • Interactive HTML reports saved to MLflow                            │   │
-│  │   • Feature-level drift scores                                          │   │
-│  └─────────────────────────────────────────────────────────────────────────┘   │
-│                       ↓                                                        │
-│  ┌─────────────────────────────────────────────────────────────────────────┐   │
-│  │                    Concept Drift Detection                              │   │
-│  │   • Prediction-target correlation changes                               │   │
-│  │   • High confidence error rate increase                                 │   │
-│  │   • False positive/negative rate changes                                │   │
-│  └─────────────────────────────────────────────────────────────────────────┘   │
-│                       ↓                                                        │
-│  ┌─────────────────────────────────────────────────────────────────────────┐   │
-│  │                 Visualization & Alerting                                │   │
-│  │   • Evidently interactive HTML reports logged to MLflow                 │   │
-│  │   • Data drift report (distributions, PSI, KS per feature)              │   │
-│  │   • Classification report (ROC, PR, confusion matrix)                   │   │
-│  │   • Alert if performance degrades below threshold                       │   │
-│  └─────────────────────────────────────────────────────────────────────────┘   │
-│                       ↓                                                        │
-│            If drift detected or performance degraded:                          │
-│                  → Trigger pipeline retraining                                 │
-│                  → Update model in registry                                    │
-│                  → Redeploy to endpoint                                        │
-└────────────────────────────────────────────────────────────────────────────────┘
-                                      ↓
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           Athena Data Lake                                      │
-│                                                                                 │
-│  • training_data (284K rows) - Original training dataset                        │
-│  • inference_responses (partitioned by date) - All predictions with metadata    │
-│  • ground_truth_updates - Fraud confirmations from investigations               │
-│  • ground_truth (historical) - Previous ground truth data  - plac               │
-│  • drifted_data - Samples flagged for drift analysis                            │
-└─────────────────────────────────────────────────────────────────────────────────┘
-```
-
-## Why This Architecture?
-
-This solution addresses a critical gap: **lack of production-ready inference monitoring options** in the ML ecosystem. While training pipelines are well-served by managed platforms, comprehensive inference monitoring with drift detection, ground truth integration, and automated alerting requires custom solutions or expensive enterprise platforms.
 
 **Key Differentiators:**
 
@@ -246,39 +136,9 @@ This solution addresses a critical gap: **lack of production-ready inference mon
 
 ## Why Not SageMaker DataCaptureConfig?
 
-SageMaker provides a built-in [`DataCaptureConfig`](https://docs.aws.amazon.com/sagemaker/latest/dg/model-monitor-data-capture.html) that captures raw request/response payloads from real-time endpoints and writes them to S3 in jsonl format. It's designed to feed into **SageMaker Model Monitor** for automated drift detection and data quality checks. At first glance it seems like the obvious choice — so why doesn't this architecture use it?
+SageMaker provides a built-in [`DataCaptureConfig`](https://docs.aws.amazon.com/sagemaker/latest/dg/model-monitor-data-capture.html) that captures raw request/response payloads from real-time endpoints and writes them to S3 in jsonl format. But it only supports real-time endpoints as of today.
 
-**1. No Serverless Endpoint Support**
-`DataCaptureConfig` only works with real-time (`ProductionVariant`) endpoints. If you deploy with serverless inference (common for cost-sensitive or bursty workloads), data capture simply isn't available. This architecture's SQS-based logging works with any endpoint type.
-
-**2. Raw Capture Without Feature-Level Parsing**
-Data capture dumps the raw HTTP request/response body to S3. For tabular models like XGBoost, you still need to parse CSV/JSON payloads back into individual features before you can compute per-feature drift statistics. Our Lambda consumer writes structured, column-level data directly to Athena Iceberg tables — ready for immediate querying.
-
-**3. Locked Into SageMaker Model Monitor ($200+/month)**
-`DataCaptureConfig` is the ingestion layer for Model Monitor, which runs processing jobs on a schedule to compute statistics and detect violations. Model Monitor charges for the processing instances (typically `ml.m5.xlarge`), and you're limited to its built-in statistical tests. This architecture uses Evidently (open-source) running inside a Lambda function for ~$5/month, with richer drift detection (PSI, KS, Wasserstein) and interactive HTML reports.
-
-**4. No Direct Athena/Iceberg Integration**
-Captured data lands as raw jsonl files in S3 with a specific directory structure (`{endpoint}/{variant}/{yyyy/mm/dd/hh}/`). To query this data in Athena, you'd need to build an ETL pipeline (Glue crawler or custom job) to parse and load it into queryable tables. This architecture writes directly to Iceberg tables — no ETL required.
-
-**5. No Evidently or MLflow Integration**
-Model Monitor produces its own statistics and constraint violation reports. There's no native way to generate Evidently interactive HTML reports or log drift metrics/artifacts to MLflow. You'd need to build a bridge layer anyway, at which point you've lost the "managed" benefit.
-
-**6. No Ground Truth Correlation**
-Model Monitor focuses on data quality and distribution drift. It doesn't handle ground truth integration — merging delayed labels back into inference records to compute actual model performance (ROC-AUC, precision, recall). This architecture's Athena MERGE workflow handles that natively.
-
-**In Summary:**
-
-| Capability | DataCaptureConfig + Model Monitor | This Architecture |
-|---|---|---|
-| Serverless endpoints | ❌ | ✅ |
-| Feature-level Athena tables | ❌ (raw jsonl) | ✅ (Iceberg) |
-| Evidently HTML reports | ❌ | ✅ |
-| MLflow metric/artifact logging | ❌ | ✅ |
-| Ground truth integration | ❌ | ✅ |
-| Monthly cost | ~$200+ | ~$30 |
-| Vendor lock-in | SageMaker only | Portable (open-source SDKs) |
-
-`DataCaptureConfig` makes sense if you're fully committed to the SageMaker Model Monitor ecosystem and only use real-time endpoints. For this architecture — which prioritizes Evidently-powered drift detection, MLflow as the monitoring hub, Athena as the data lake, and cost efficiency — a custom SQS→Lambda→Athena pipeline is the better fit.
+`DataCaptureConfig` makes sense if you are using real-time endpoints. For this architecture — which prioritizes Evidently-powered drift detection, MLflow as the monitoring hub, Athena as the data lake, and cost efficiency — a custom SQS→Lambda→Athena pipeline is the better fit.
 
 ## Project Structure
 
@@ -380,28 +240,6 @@ All architecture diagrams use official AWS Architecture Icons and are generated 
 pip install diagrams
 brew install graphviz  # macOS
 ```
-
-### AWS Icons Setup
-
-The diagrams use official AWS icons stored in `docs/icons/`. These are gitignored due to size. To set up:
-
-1. Download the [AWS Architecture Icon package](https://aws.amazon.com/architecture/icons/)
-2. Copy the required icons into `docs/icons/` with these names:
-
-| File | Source |
-|---|---|
-| `sagemaker.png` | `Arch_Amazon-SageMaker-AI_64@5x.png` |
-| `lambda.png` | `Arch_AWS-Lambda_64@5x.png` |
-| `sqs.png` | `Arch_Amazon-Simple-Queue-Service_64@5x.png` |
-| `eventbridge.png` | `Arch_Amazon-EventBridge_64@5x.png` |
-| `sns.png` | `Arch_Amazon-Simple-Notification-Service_64@5x.png` |
-| `athena.png` | `Arch_Amazon-Athena_64@5x.png` |
-| `quicksight.png` | `Arch_Amazon-Quick-Suite_64@5x.png` |
-| `s3.png` | `Arch_Amazon-Simple-Storage-Service_64@5x.png` |
-| `cloudwatch.png` | `Arch_Amazon-CloudWatch_64@5x.png` |
-| `sagemaker_notebook.png` | `Res_Amazon-SageMaker-AI_Notebook_48.png` |
-
-Third-party icons (MLflow, Evidently, XGBoost) are downloaded automatically on first run.
 
 ### Generate All Diagrams
 
@@ -1234,8 +1072,6 @@ DATA DRIFT ANALYSIS SUMMARY
   🟡 MINOR merchant_reputation_score: PSI=0.0812
 ```
 
-**Note:** Previously, only `transaction_amount` was analyzed because the other 29 features were stored in the `input_features` JSON column. The updated Cell 31 now parses this JSON to extract all features, providing comprehensive drift detection across the entire feature set.
-
 **Chi-Square Test:**
 ```python
 # For categorical features
@@ -1378,16 +1214,6 @@ EVIDENTLY_DRIFT_THRESHOLD=0.2    # Overall drift threshold
 - High confidence error rate
 
 ### Interactive Monitoring (Notebook)
-
-```bash
-# Open: notebooks/2a_inference_monitoring.ipynb
-
-# Cell 16: Check ground truth coverage
-# Cell 31: Data Drift Detection - Runs Evidently DataDriftPreset on all 30 features
-# Cell 32: Display interactive Evidently data drift report
-# Cell 34-35: Model Drift Detection - Runs Evidently ClassificationPreset
-# Cell 37: Log Evidently HTML reports and metrics to MLflow
-```
 
 **Evidently Reports Logged to MLflow:**
 1. `evidently_reports/data_drift_*.html` — Interactive data drift dashboard with per-feature PSI, KS, distribution comparisons
@@ -1776,6 +1602,213 @@ aws sns delete-topic --topic-arn arn:aws:sns:us-east-1:{account}:fraud-detection
 5. **Test Monthly**: Manually trigger Lambda to ensure monitoring is working
 6. **Keep Email List Current**: Update SNS subscriptions when team members change
 7. **Document Investigations**: Log drift investigations in MLflow or tracking system
+
+## Advanced Configuration
+
+### Lambda Redeployment Control
+
+By default, `2a_inference_monitoring.ipynb` checks if Lambda functions already exist before deploying them. This prevents unnecessary redeployment during notebook reruns.
+
+**Configuration Flag (Cell 26):**
+```python
+# Set to True to force redeployment even if Lambda exists
+REDEPLOY_LAMBDAS = False  # Default: skip if exists
+```
+
+**Behavior:**
+- `False` (default): Checks if Lambda exists, skips deployment if found
+- `True`: Always redeploys Lambda functions, even if they already exist
+
+**Use Cases:**
+- **Set to True** when you've modified Lambda code (e.g., `lambda_drift_monitor.py`, `lambda_inference_logger.py`)
+- **Keep False** for routine notebook reruns to avoid unnecessary deployments and IAM role recreation
+
+**Affected Lambdas:**
+1. `fraud-monitoring-results-writer` (Cell 28) - Writes drift monitoring results to Athena
+2. `fraud-detection-drift-monitor` (Cell 60) - Performs automated drift detection
+
+### Drift Simulation Configuration
+
+The ground truth simulator allows configurable drift scenarios for testing the monitoring system. This is critical for validating that drift detection triggers correctly before deploying to production.
+
+**Configuration (Cell 15 in `2a_inference_monitoring.ipynb`):**
+```python
+# Ground Truth Simulation Configuration
+SIM_ACCURACY = 0.85              # Base model accuracy (0.0-1.0)
+
+# Feature drift (manifests as accuracy degradation)
+SIM_FEATURE_DRIFT_MAG = 0.0      # How much features drift (0.0-1.0, semantic)
+SIM_FEATURE_DRIFT_COUNT = 0      # Number of features drifting (semantic)
+SIM_FEATURE_DRIFT_IMPACT = 0.0   # Accuracy reduction from feature drift (0.0-1.0)
+
+# Model drift (direct accuracy degradation)
+SIM_MODEL_DRIFT_MAG = 0.0        # Model accuracy degradation (0.0-1.0)
+```
+
+**How It Works:**
+- **Base Accuracy**: Starting model performance (default 85%)
+- **Feature Drift**: Simulates feature distribution changes that degrade model accuracy
+  - `SIM_FEATURE_DRIFT_MAG` and `SIM_FEATURE_DRIFT_COUNT` are semantic parameters (documentation only)
+  - `SIM_FEATURE_DRIFT_IMPACT` directly reduces effective accuracy (e.g., 0.10 = 10% reduction)
+- **Model Drift**: Simulates direct model performance degradation
+  - `SIM_MODEL_DRIFT_MAG` directly reduces effective accuracy (e.g., 0.15 = 15% reduction)
+- **Effective Accuracy**: `base_accuracy - feature_drift_impact - model_drift_mag` (minimum 50%)
+
+**Testing Scenarios:**
+
+**Scenario 1 - No Drift (Baseline):**
+```python
+SIM_ACCURACY = 0.85
+SIM_FEATURE_DRIFT_IMPACT = 0.0
+SIM_MODEL_DRIFT_MAG = 0.0
+# Effective accuracy: 85%
+# Expected: No drift alerts
+```
+
+**Scenario 2 - Feature Drift:**
+```python
+SIM_ACCURACY = 0.85
+SIM_FEATURE_DRIFT_MAG = 0.5      # 50% drift magnitude (semantic)
+SIM_FEATURE_DRIFT_COUNT = 10     # 10 features drifting (semantic)
+SIM_FEATURE_DRIFT_IMPACT = 0.10  # 10% accuracy reduction
+SIM_MODEL_DRIFT_MAG = 0.0
+# Effective accuracy: 75%
+# Expected: Data drift detected, accuracy degradation alert
+```
+
+**Scenario 3 - Model Drift:**
+```python
+SIM_ACCURACY = 0.85
+SIM_FEATURE_DRIFT_IMPACT = 0.0
+SIM_MODEL_DRIFT_MAG = 0.15       # 15% degradation
+# Effective accuracy: 70%
+# Expected: Model drift alert, significant accuracy drop
+```
+
+**Scenario 4 - Combined Drift:**
+```python
+SIM_ACCURACY = 0.85
+SIM_FEATURE_DRIFT_IMPACT = 0.08  # 8% from features
+SIM_MODEL_DRIFT_MAG = 0.07       # 7% from model
+# Effective accuracy: 70%
+# Expected: Both data drift and model drift detected
+```
+
+**Production Replacement:**
+Replace `GroundTruthSimulator` with actual fraud investigation system that writes to `ground_truth_updates` table:
+- Chargeback notifications
+- Customer fraud reports
+- Investigation team confirmations
+- Merchant alerts
+
+### MLflow Run ID Tracking
+
+Each drift monitoring execution creates a unique MLflow run with a UUID for complete traceability.
+
+**Implementation:**
+- Lambda function `fraud-detection-drift-monitor` generates unique run ID on every execution
+- Stored in `monitoring_responses` Athena table under `mlflow_run_id` column
+- Enables tracking of drift metrics over time in MLflow experiments
+
+**Verification (in `4_optional_version_validation.ipynb`):**
+```python
+# Cell 12-13: Validate unique run IDs
+query = """
+    SELECT monitoring_run_id, monitoring_timestamp, mlflow_run_id,
+           data_drift_detected, model_drift_detected
+    FROM fraud_detection.monitoring_responses
+    ORDER BY monitoring_timestamp DESC LIMIT 10
+"""
+unique_runs = athena_df['mlflow_run_id'].nunique()
+print(f"✓ Unique MLflow run IDs: {unique_runs}")
+```
+
+**Expected Behavior:**
+- Each drift test generates new UUID (e.g., `a3f7b2c1-...`, `d8e9f0a2-...`)
+- No more generic "unknown" or "pipeline" values
+- Full audit trail of all drift monitoring executions
+
+**MLflow Experiment:**
+- Experiment: `fraud-detection-drift_monitoring`
+- Each run contains:
+  - Drift metrics (per-feature drift scores, aggregate statistics)
+  - Performance metrics (ROC-AUC, accuracy, precision, recall)
+  - Evidently HTML reports (data drift dashboard, classification dashboard)
+  - Detection flags (data_drift_detected, model_drift_detected)
+
+### QuickSight Dashboard Auto-Refresh
+
+The governance dashboard automatically refreshes daily with the latest drift monitoring results.
+
+**Architecture:**
+```
+2:00 AM UTC → Drift Monitoring Lambda (fraud-detection-drift-monitor)
+              ├─ Runs Evidently drift detection
+              ├─ Logs metrics to MLflow
+              └─ Writes results to monitoring_responses Athena table
+
+                 ⏱️ Wait 1 hour for data to settle...
+
+3:00 AM UTC → QuickSight Refresh Lambda (quicksight-dashboard-refresh)
+              ├─ Triggers SPICE ingestion for 3 datasets:
+              │  ├─ Inference Monitoring Dataset
+              │  ├─ Drift Monitoring Dataset
+              │  └─ Feature Drift Analysis Dataset
+              └─ Dashboard shows updated data by morning
+```
+
+**Components Created (Cells 74-75 in `2a_inference_monitoring.ipynb`):**
+
+1. **Lambda Function**: `quicksight-dashboard-refresh`
+   - Runtime: Python 3.11
+   - Memory: 128 MB
+   - Environment Variables:
+     - `AWS_ACCOUNT_ID`
+     - `INFERENCE_DATASET_ID`
+     - `DRIFT_DATASET_ID`
+     - `FEATURE_DRIFT_DATASET_ID`
+
+2. **IAM Role**: `quicksight-dashboard-refresh-role`
+   - Permissions: `quicksight:CreateIngestion`, `quicksight:DescribeIngestion`
+
+3. **EventBridge Rule**: `quicksight-dashboard-daily-refresh`
+   - Schedule: `cron(0 3 * * ? *)` (3:00 AM UTC daily)
+   - Target: `quicksight-dashboard-refresh` Lambda
+
+**Manual Refresh (Cell 2 in `3_governance_dashboard.ipynb`):**
+```python
+# Quick refresh cell at top of governance dashboard notebook
+# Refreshes all 3 QuickSight datasets immediately
+# Use after new drift monitoring runs or inference predictions
+```
+
+**Verification:**
+```bash
+# Check EventBridge schedule
+aws events describe-rule --name quicksight-dashboard-daily-refresh
+
+# View Lambda logs
+aws logs tail /aws/lambda/quicksight-dashboard-refresh --follow
+
+# Check QuickSight ingestion history
+# Go to QuickSight Console → Datasets → Refresh tab
+```
+
+**Benefits:**
+- No manual dashboard refresh required
+- Always see latest data by morning (after 3 AM UTC refresh)
+- Automated after drift monitoring completes
+- Cost: <$1/month (Lambda + EventBridge)
+
+**Customization:**
+```python
+# Change refresh schedule (in Cell 75)
+events.put_rule(
+    Name='quicksight-dashboard-daily-refresh',
+    ScheduleExpression='cron(0 6 * * ? *)',  # 6 AM UTC instead
+    State='ENABLED'
+)
+```
 
 ## Athena Data Lake
 
@@ -2619,6 +2652,6 @@ MIT License - See LICENSE file for details
 
 | Date | Summary |
 |------|---------|
-| 2026-03-24 | Updated all three architecture diagrams (`architecture_diagram.py`, `generate_inference_monitoring_diagram.py`, `generate_mlflow_evidently_diagram.py`) to reflect latest pipeline additions. Added EventBridge + Lambda dataset refresh flow to the Governance Dashboard (QuickSight) lane. Added `config.yaml` drift metrics configuration node with file icon showing configurability — dashed edges connect it to the Drift Monitor Lambda (data drift thresholds) and Evidently AI (model drift thresholds). Created `config_file.png` icon in `docs/icons/`. Regenerated all PNG diagrams. |
+| 2026-03-24 | **README Major Revision**: Removed duplicate "Complete Architecture" ASCII art section (136 lines) since visual diagrams (architecture_diagram.png, inference_monitoring_diagram.png) provide better visualization. Enhanced Overview section with comprehensive explanation of ML governance importance, production monitoring challenges, and solution benefits. Added "Advanced Configuration" section documenting recent features: (1) `REDEPLOY_LAMBDAS` flag for Lambda redeployment control, (2) drift simulation configuration with test scenarios (`SIM_ACCURACY`, `SIM_FEATURE_DRIFT_IMPACT`, `SIM_MODEL_DRIFT_MAG`), (3) MLflow run ID tracking with unique UUIDs per drift test, (4) QuickSight dashboard auto-refresh automation (3 AM UTC daily after drift monitoring at 2 AM). Updated all three architecture diagrams to reflect latest pipeline additions. Added EventBridge + Lambda dataset refresh flow to Governance Dashboard (QuickSight) lane. Added `config.yaml` drift metrics configuration node with file icon. Regenerated all PNG diagrams. |
 | 2026-03-21 | Added drift trend analysis visuals to `3_governance_dashboard.ipynb`: second QuickSight dataset (`monitoring_responses`) and Sheet 2 with 6 new visuals (drift share over time, drifted feature counts, ROC-AUC baseline vs current, model performance multi-line, drift alerts timeline, drift KPI). Aligned `setup_quicksight_governance.py` column names with actual `monitoring_responses` Iceberg schema. Added Lake Formation grants for all tables (caller IAM role + Lambda role). Fixed SSO assumed-role ARN resolution for Lake Formation. Standardized table name to `monitoring_responses` across codebase. Added notebook cell to write Evidently drift metrics directly to `monitoring_responses` Athena table. Inference handler now resolves `model_version` and `mlflow_run_id` dynamically from MLflow registry at model load time. Pipeline model step passes `MODEL_VERSION` and `MLFLOW_RUN_ID` env vars. Added "Why Not SageMaker DataCaptureConfig?" section to README. Fixed notebook cell ordering, MLflow tracking URI, Lake Formation Principal parameter, screenshot path, and various module/dependency issues. Renamed directory from `automated-drift_monitoring-evidently` to `sagemaker-automated-drift-and-trend-monitoring`. |
 | 2026-03-18 | Initial documentation v3.0 with Evidently integration, MLflow tracking, and SageMaker pipeline. |
