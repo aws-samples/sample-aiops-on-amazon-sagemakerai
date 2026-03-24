@@ -1,0 +1,290 @@
+# =============================================================================
+# Central Configuration for Drift Monitoring Pipeline
+# =============================================================================
+# This is the single source of truth for all shared variables across pipeline
+# stages. Edit this file to configure the project. Environment variables in
+# .env will override values defined here.
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# AWS
+# ---------------------------------------------------------------------------
+aws:
+  region: us-east-1
+
+# ---------------------------------------------------------------------------
+# SageMaker
+# ---------------------------------------------------------------------------
+sagemaker:
+  exec_role: ""                  # ARN of the SageMaker execution role
+  training_instance: ml.m5.xlarge
+  training_volume_size: 30       # GB
+  serverless_memory_size: 2048   # MB (1024-6144)
+  serverless_max_concurrency: 5  # Max concurrent invocations (1-200)
+  batch_transform_instance: ml.m5.xlarge
+  batch_transform_max_concurrent: 4
+
+# ---------------------------------------------------------------------------
+# MLflow tracking server settings
+# ---------------------------------------------------------------------------
+mlflow:
+  tracking_uri: ""               # SageMaker MLflow tracking server ARN
+  tracking_browser_url: ""       # Browser URL for the MLflow UI
+  experiment_name: credit-card-fraud-detection-training
+  inference_experiment_name: credit-card-fraud-detection-inference
+  batch_experiment_name: credit-card-fraud-detection-batch
+  monitoring_experiment_name: credit-card-fraud-detection-monitoring
+  model_name: xgboost-fraud-detector
+
+# ---------------------------------------------------------------------------
+# Athena data lake settings
+# ---------------------------------------------------------------------------
+athena:
+  database: fraud_detection
+  workgroup: primary
+  output_s3: ""                  # S3 path for Athena query results
+  training_table: training_data
+  inference_table: inference_responses
+  ground_truth_table: ground_truth
+  ground_truth_updates_table: ground_truth_updates
+  drifted_data_table: drifted_data
+  monitoring_responses_table: monitoring_responses  # Iceberg table for drift monitoring results
+  query_timeout: 300             # Seconds
+
+# ---------------------------------------------------------------------------
+# S3 storage
+# ---------------------------------------------------------------------------
+s3:
+  bucket: ""                     # S3 bucket for data lake storage
+  prefix: "fraud-detection/"
+  training_data: ""              # s3://bucket/prefix/training_data/
+  ground_truth: ""               # s3://bucket/prefix/ground_truth/
+  inference_responses: ""        # s3://bucket/prefix/inference_responses/
+  drifted_data: ""               # s3://bucket/prefix/drifted_data/
+  ground_truth_updates: ""       # s3://bucket/prefix/ground_truth_updates/
+  model_artifacts: ""            # s3://bucket/prefix/model_artifacts/
+  training_data_export: ""       # s3://bucket/prefix/training_data_export/
+  batch_transform_input: ""      # s3://bucket/prefix/batch_transform/input/
+  batch_transform_output: ""     # s3://bucket/prefix/batch_transform/output/
+
+# ---------------------------------------------------------------------------
+# SQS queue configuration
+# ---------------------------------------------------------------------------
+sqs:
+  # Inference logging queue
+  inference_queue_name: fraud-inference-logs
+  inference_queue_url: ""        # Full SQS queue URL (set after creation)
+
+  # Monitoring results queue
+  monitoring_queue_name: fraud-monitoring-results
+  monitoring_queue_url: ""       # Full SQS queue URL (set after creation)
+
+# ---------------------------------------------------------------------------
+# Inference logging (SQS → Lambda → Athena)
+# ---------------------------------------------------------------------------
+inference_logging:
+  enable_athena_logging: "true"
+  batch_size: "100"
+  flush_interval: "300"          # Seconds between flush cycles
+
+# ---------------------------------------------------------------------------
+# Inference confidence thresholds
+# ---------------------------------------------------------------------------
+inference:
+  high_confidence_threshold: 0.9
+  low_confidence_lower: 0.4
+  low_confidence_upper: 0.6
+
+# ---------------------------------------------------------------------------
+# Lambda configuration
+# ---------------------------------------------------------------------------
+lambda:
+  # Drift monitoring Lambda (container-based, runs daily)
+  drift_monitor_name: fraud-detection-drift-monitor
+  drift_monitor_role: ""         # ARN of the drift monitor Lambda execution role
+
+  # Monitoring writer Lambda (writes results from SQS to Athena)
+  monitoring_writer_name: fraud-monitoring-results-writer
+  monitoring_writer_role: ""     # ARN of the monitoring writer Lambda role
+
+  # Inference logger Lambda (writes inference logs from SQS to Athena)
+  logger_name: fraud-inference-log-consumer
+  exec_role: ""                  # ARN of the Lambda execution role
+
+# ---------------------------------------------------------------------------
+# Data file paths
+# ---------------------------------------------------------------------------
+# Local paths are relative to project root (used only by upload_data_to_s3.py).
+# All pipeline/Athena code should read from S3 paths below.
+data:
+  csv_training_data: "data/creditcard_predictions_final.csv"
+  csv_ground_truth: "data/creditcard_ground_truth.csv"
+  csv_drifted_data: "data/creditcard_drifted.csv"
+  # S3 locations (populated automatically from bucket + prefix if left empty)
+  s3_training_data: ""           # s3://bucket/prefix/data/creditcard_predictions_final.csv
+  s3_ground_truth: ""            # s3://bucket/prefix/data/creditcard_ground_truth.csv
+  s3_drifted_data: ""            # s3://bucket/prefix/data/creditcard_drifted.csv
+
+# ---------------------------------------------------------------------------
+# Training features and target
+# ---------------------------------------------------------------------------
+training:
+  target_column: is_fraud
+  test_size: 0.2
+  random_state: 42
+  xgboost_params:
+    n_estimators: 200
+    max_depth: 8
+    learning_rate: 0.05
+    subsample: 0.8
+    colsample_bytree: 0.8
+    min_child_weight: 5
+    gamma: 0.1
+    reg_alpha: 0.1
+    reg_lambda: 1.0
+    use_label_encoder: false
+    eval_metric: "logloss"
+  features:
+    - transaction_hour
+    - transaction_day_of_week
+    - transaction_amount
+    - customer_age
+    - customer_gender
+    - distance_from_home_km
+    - merchant_category_code
+    - chip_transaction
+    - num_transactions_24h
+    - credit_limit
+    - available_credit_ratio
+    - avg_transaction_amount_7d
+    - avg_transaction_amount_30d
+    - transaction_amount_zscore
+    - is_weekend
+    - is_night
+    - merchant_risk_score
+    - customer_tenure_days
+    - num_cards
+    - card_present
+    - recurring_merchant
+    - distance_from_last_transaction_km
+    - time_since_last_transaction_min
+    - foreign_transaction
+    - high_risk_country
+    - velocity_1h
+    - velocity_24h
+    - amount_to_limit_ratio
+    - digital_wallet
+    - authentication_method
+
+# ---------------------------------------------------------------------------
+# Drift detection thresholds
+# ---------------------------------------------------------------------------
+drift_thresholds:
+  # PSI (Population Stability Index) boundaries
+  psi_no_drift: 0.1
+  psi_moderate_drift: 0.2
+  psi_significant_drift: 0.25
+  # Kolmogorov-Smirnov test significance level
+  ks_significance: 0.05
+  # Model performance degradation threshold (fraction, e.g. 0.05 = 5%)
+  performance_degradation_pct: 0.05
+  # Minimum acceptable ROC-AUC before alerting
+  min_roc_auc: 0.85
+
+# ---------------------------------------------------------------------------
+# Evidently statistical test settings
+# ---------------------------------------------------------------------------
+evidently:
+  drift_method: psi
+  drift_threshold: 0.1
+  stattest_threshold: 0.05
+  num_stattest: ks              # Statistical test for numerical features
+  cat_stattest: chisquare       # Statistical test for categorical features
+  baseline_samples: 5000
+  baseline_s3_prefix: "fraud-detection/baselines/"
+
+# ---------------------------------------------------------------------------
+# SNS alerting
+# ---------------------------------------------------------------------------
+sns:
+  topic_name: fraud-detection-drift-alerts
+  topic_arn: ""                  # Full SNS topic ARN (set after creation)
+
+# ---------------------------------------------------------------------------
+# EventBridge scheduling
+# ---------------------------------------------------------------------------
+eventbridge:
+  rule_name: fraud-detection-drift-check
+  schedule_expression: "cron(0 2 * * ? *)"  # Daily at 2 AM UTC
+  description: "Daily drift monitoring check"
+
+# ---------------------------------------------------------------------------
+# CloudWatch monitoring
+# ---------------------------------------------------------------------------
+cloudwatch:
+  # Dashboard configuration
+  dashboard_name: FraudDetection-DriftMonitoring
+  namespace: FraudDetection/DriftMonitoring
+
+  # Log groups
+  drift_lambda_log_group: /aws/lambda/fraud-detection-drift-monitor
+  monitoring_writer_log_group: /aws/lambda/fraud-monitoring-results-writer
+
+  # Alarm thresholds
+  data_drift_threshold: 0.2      # PSI threshold for data drift alarm
+  model_drift_threshold: 0.10    # Degradation % for model drift alarm
+  alarm_evaluation_periods: 1
+
+# ---------------------------------------------------------------------------
+# Monitoring runtime configuration
+# ---------------------------------------------------------------------------
+monitoring:
+  lookback_days: 30
+  min_samples_for_drift: 100
+
+# ---------------------------------------------------------------------------
+# Ground Truth Simulation (Development/Testing)
+# ---------------------------------------------------------------------------
+ground_truth_simulation:
+  # Model accuracy parameters
+  default_accuracy: 0.90
+
+  # Confirmation timing (days)
+  fraud_confirmation_days_min: 1
+  fraud_confirmation_days_max: 7
+  non_fraud_confirmation_days_min: 1
+  non_fraud_confirmation_days_max: 30
+
+  # Feature drift parameters (controls accuracy degradation)
+  feature_drift_magnitude: 0.1    # 0.0-1.0: How much features drift (0.0 = no drift)
+  feature_drift_count: 4          # Number of features drifting (0 = none)
+  feature_drift_impact: 0.05       # 0.0-1.0: Accuracy reduction due to feature drift
+
+  # Model drift parameters (direct accuracy degradation)
+  model_drift_magnitude: 0.05      # 0.0-1.0: Direct model accuracy reduction (0.0 = no drift)
+
+  # Random seed
+  random_seed: 42
+
+# ---------------------------------------------------------------------------
+# QuickSight governance dashboard
+# ---------------------------------------------------------------------------
+quicksight:
+  # Resource IDs (must be unique within AWS account)
+  datasource_id: fraud-governance-athena-datasource
+  inference_dataset_id: fraud-governance-inference-dataset
+  drift_dataset_id: fraud-governance-drift-dataset
+  feature_drift_dataset_id: fraud-governance-feature-drift-dataset
+  analysis_id: fraud-governance-analysis
+  dashboard_id: fraud-governance-dashboard
+
+  # Display names
+  datasource_name: Fraud Governance - Athena
+  inference_dataset_name: Fraud Governance - Inference Monitoring
+  drift_dataset_name: Fraud Governance - Drift Monitoring
+  feature_drift_dataset_name: Fraud Governance - Feature Drift Analysis
+  analysis_name: Fraud Detection Governance Analysis
+  dashboard_name: Fraud Detection Governance
+
+  # QuickSight service role (for Lake Formation permissions)
+  service_role_name: aws-quicksight-service-role-v0
