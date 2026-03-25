@@ -130,6 +130,12 @@ with Diagram(
     with Cluster("AWS Cloud", graph_attr=CL_AWS):
 
         # ════════════════════════════════════════════════════════════
+        # Shared — SageMaker MLflow App (single instance)
+        # ════════════════════════════════════════════════════════════
+        with Cluster("Experiment Tracking", graph_attr=CL_SUB):
+            mlflow_hub = Custom("SageMaker\nMLflow App", MLFLOW)
+
+        # ════════════════════════════════════════════════════════════
         # LANE 1 — Training Pipeline (Left side)
         # ════════════════════════════════════════════════════════════
         with Cluster("Training Pipeline\n(SageMaker Pipelines)", graph_attr=CL_LANE1):
@@ -142,9 +148,6 @@ with Diagram(
             pyspark = Custom("PySpark\nProcessing", GLUE)
             xgb = Custom("XGBoost\nTraining", SAGEMAKER)
             evaluate = Custom("Evaluate\n(Quality Gate)", SAGEMAKER)
-
-            # MLflow tracking
-            mlflow_t = Custom("MLflow\nTracking", MLFLOW)
 
             # Deployment
             ep = Custom("SageMaker\nEndpoint", SAGEMAKER)
@@ -160,9 +163,9 @@ with Diagram(
             pyspark >> Edge(color="#0972D3", minlen="1") >> xgb
             xgb >> Edge(color="#0972D3", minlen="1") >> evaluate
 
-            # MLflow connections
-            xgb >> Edge(label="metrics", color="#7B1FA2", style="dashed") >> mlflow_t
-            evaluate >> Edge(label="register", color="#7B1FA2", style="dashed") >> mlflow_t
+            # MLflow connections (to shared hub)
+            xgb >> Edge(label="metrics\n& model", color="#7B1FA2", style="dashed") >> mlflow_hub
+            evaluate >> Edge(label="register", color="#7B1FA2", style="dashed") >> mlflow_hub
 
             # Deployment flow
             evaluate >> Edge(label="deploy", color="#0972D3", minlen="1") >> ep
@@ -188,7 +191,6 @@ with Diagram(
             eb_drift = Custom("EventBridge\n2 AM daily", EVENTBRIDGE)
             lam_drift = Custom("λ Drift\nMonitor", LAMBDA)
             ev = Custom("Evidently AI\nDrift Analysis", EVIDENTLY)
-            mlflow_m = Custom("MLflow\nMonitoring", MLFLOW)
 
             # Monitoring storage
             sqs_m = Custom("SQS\nResults", SQS)
@@ -211,7 +213,7 @@ with Diagram(
             lam_drift >> Edge(label="query", color="#D45B07", style="dashed") >> athena_i
 
             lam_drift >> Edge(color="#D45B07") >> ev
-            ev >> Edge(label="reports", color="#7B1FA2", style="dashed") >> mlflow_m
+            ev >> Edge(label="reports\n& scores", color="#7B1FA2", style="dashed") >> mlflow_hub
 
             # Results storage
             lam_drift >> Edge(label="results", color="#D45B07") >> sqs_m
@@ -225,22 +227,14 @@ with Diagram(
         # ════════════════════════════════════════════════════════════
         # LANE 3 — Governance Dashboard (Right side)
         # ════════════════════════════════════════════════════════════
-        with Cluster("Governance Dashboard\n(QuickSight)", graph_attr=CL_LANE3):
-
-            # Data refresh automation
-            eb_refresh = Custom("EventBridge\n3 AM daily", EVENTBRIDGE)
-            lam_refresh = Custom("λ Dataset\nRefresh", LAMBDA)
+        with Cluster("Governance Dashboard\n(QuickSight — Direct Query)", graph_attr=CL_LANE3):
 
             # Dashboard
             qs = Custom("QuickSight\nDashboard", QUICKSIGHT)
 
-            # Dataset refresh flow
-            eb_refresh >> Edge(label="trigger", color="#5B48D0") >> lam_refresh
-            lam_refresh >> Edge(label="refresh", color="#5B48D0") >> qs
-
-            # Data connections
-            athena_i >> Edge(label="inference", color="#5B48D0", style="dashed") >> qs
-            athena_m >> Edge(label="drift", color="#5B48D0", style="dashed") >> qs
+            # Direct query connections from Athena
+            athena_i >> Edge(label="direct query\ninference", color="#5B48D0", style="dashed") >> qs
+            athena_m >> Edge(label="direct query\ndrift", color="#5B48D0", style="dashed") >> qs
 
 
 print(f"\n✅  Architecture diagram → {OUTPUT}.png")

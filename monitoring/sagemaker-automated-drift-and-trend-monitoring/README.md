@@ -6,6 +6,10 @@ This solution provides an end-to-end, open-source MLOps system built on Amazon S
 
 The result is a production-ready monitoring system that costs roughly $30/month (compared to $200+ for managed alternatives), runs entirely on open-source SDKs portable across clouds, and handles real-world challenges like delayed ground truth confirmations, concept drift, and multi-feature drift analysis. Three guided Jupyter notebooks walk you from training through monitoring to dashboard creation, making it straightforward to adapt this pattern to your own models and datasets.
 
+**Understanding Drift Through Visualization**
+
+The QuickSight governance dashboard features drift score trendlines that plot each feature's Population Stability Index (PSI) over time. These time-series visualizations let you identify which specific features are drifting (e.g., `credit_limit` spiking to 74.47, `merchant_category_code` at 28.25), distinguish temporary spikes from permanent shifts, and correlate drift events with model deployments or business changes. Instead of a single "drift detected" alert, you get granular per-feature analysis showing exactly which input distributions have changed since training — enabling targeted investigation of data quality issues, pipeline changes, or genuine shifts in customer behavior. For an accessible deep dive into interpreting drift scores and PSI calculations, see [Understanding Drift Scores: A Visual Guide](docs/screenshots/quicksight/README.md).
+
 ---
 
 # Credit Card Fraud Detection with SageMaker Pipelines
@@ -229,11 +233,14 @@ sagemaker-automated-drift-and-trend-monitoring/
 │   ├── generate_inference_monitoring_diagram.py # Generates inference_monitoring_diagram.png (AWS icons)
 │   ├── generate_mlflow_evidently_diagram.py  # Generates mermaid-diagram-mlflow-evidently.png (AWS icons)
 │   ├── icons/                                # Official AWS Architecture Icons + third-party logos
-│   └── guides/                               # Generated diagrams and screenshots
-│       ├── architecture_diagram.png          # Full MLOps architecture diagram
-│       ├── inference_monitoring_diagram.png   # Inference monitoring pipeline diagram
-│       ├── mermaid-diagram-mlflow-evidently.png # MLflow + Evidently monitoring flow
-│       └── screenshots/                      # SageMaker Studio screenshots
+│   ├── guides/                               # Generated diagrams
+│   │   ├── architecture_diagram.png          # Full MLOps architecture diagram
+│   │   ├── inference_monitoring_diagram.png   # Inference monitoring pipeline diagram
+│   │   └── mermaid-diagram-mlflow-evidently.png # MLflow + Evidently monitoring flow
+│   └── screenshots/                          # Screenshots and visual guides
+│       ├── DirectTestingInSGPlayground-custom-handler.png  # SageMaker Studio screenshot
+│       └── quicksight/                       # QuickSight dashboard screenshots
+│           ├── README.md                     # Detailed guide to understanding drift scores
 │           └── Quicksight-Governance-dashboard.pdf  # QuickSight governance dashboard
 ├── main.py                                   # CLI entry point
 ├── .env.example                              # Environment template
@@ -703,7 +710,7 @@ SageMaker Studio > Deployments > Endpoints > Fraud Detector Endpoint > Playgroun
    }
    ```
 
-**Screenshot:** See `screenshots/DirectTestingInSGPlayground-custom-handler.png` for visual guide
+**Screenshot:** See `docs/screenshots/DirectTestingInSGPlayground-custom-handler.png` for visual guide
 
 **When to use:**
 - Quick manual testing without code
@@ -816,7 +823,7 @@ python main.py pipeline list-executions --pipeline-name fraud-detection-pipeline
 **ARN Format (Programmatic Access):**
 ```python
 # Use ARN for SDK and pipeline access
-MLFLOW_TRACKING_URI = "arn:aws:sagemaker:us-east-1:123456789012:mlflow-app/app-ABC123"
+MLFLOW_TRACKING_URI = "arn:aws:sagemaker:us-east-1:<ACCOUNT_ID>:mlflow-app/app-ABC123"
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 ```
 
@@ -2505,7 +2512,7 @@ The entire PoC is driven by **three notebooks** in SageMaker Studio. Each notebo
 
 **QuickSight Governance Dashboard:**
 
-> 📄 [View Governance Dashboard (PDF)](docs/guides/screenshots/Quicksight-Governance-dashboard.pdf)
+> 📄 [View Governance Dashboard (PDF)](docs/screenshots/quicksight/Quicksight-Governance-dashboard.pdf)
 
 ## Cost Optimization
 
