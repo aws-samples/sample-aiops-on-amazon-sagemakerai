@@ -1,3 +1,13 @@
+# Automated Drift and Trend Monitoring for ML Models on Amazon SageMaker
+
+Machine learning models in production degrade silently. Feature distributions shift, fraud patterns evolve, and by the time business metrics reveal the problem, the damage is done. Most teams invest heavily in training pipelines but leave inference monitoring as an afterthought — relying on expensive managed platforms or discovering issues through customer complaints.
+
+This solution provides an end-to-end, open-source MLOps system built on Amazon SageMaker, MLflow, and Evidently AI that closes the ML governance gap. It trains an XGBoost fraud detection model via SageMaker Pipelines, logs every prediction to an Athena Iceberg data lake with zero-latency async writes, and runs automated daily drift checks using EventBridge-triggered Lambda functions. Evidently AI generates interactive data drift and classification reports, while configurable thresholds in a central `config.yaml` let teams tune sensitivity for both data and model drift without code changes. SNS alerts fire when drift exceeds thresholds, and an Amazon QuickSight governance dashboard — refreshed automatically via a dedicated EventBridge + Lambda pipeline — surfaces inference trends, drift history, and model performance in a single pane of glass.
+
+The result is a production-ready monitoring system that costs roughly $30/month (compared to $200+ for managed alternatives), runs entirely on open-source SDKs portable across clouds, and handles real-world challenges like delayed ground truth confirmations, concept drift, and multi-feature drift analysis. Three guided Jupyter notebooks walk you from training through monitoring to dashboard creation, making it straightforward to adapt this pattern to your own models and datasets.
+
+---
+
 # Credit Card Fraud Detection with SageMaker Pipelines
 
 Production-grade ML pipeline for credit card fraud detection using AWS SageMaker Pipelines, MLflow tracking, and Athena data lake integration with comprehensive inference monitoring and drift detection.
