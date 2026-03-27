@@ -8,7 +8,7 @@ The result is a production-ready monitoring system that costs roughly $30/month 
 
 **Understanding Drift Through Visualization**
 
-The QuickSight governance dashboard features drift score trendlines that plot each feature's Population Stability Index (PSI) over time. These time-series visualizations let you identify which specific features are drifting (e.g., `credit_limit` spiking to 74.47, `merchant_category_code` at 28.25), distinguish temporary spikes from permanent shifts, and correlate drift events with model deployments or business changes. Instead of a single "drift detected" alert, you get granular per-feature analysis showing exactly which input distributions have changed since training — enabling targeted investigation of data quality issues, pipeline changes, or genuine shifts in customer behavior. For an accessible deep dive into interpreting drift scores and PSI calculations, see [Understanding Drift Scores: A Visual Guide](docs/screenshots/quicksight/README.md).
+The QuickSight governance dashboard features drift score trendlines that plot each feature's Population Stability Index (PSI) over time. These time-series visualizations let you identify which specific features are drifting (e.g., `credit_limit` spiking to 74.47, `merchant_category_code` at 28.25), distinguish temporary spikes from permanent shifts, and correlate drift events with model deployments or business changes. Instead of a single "drift detected" alert, you get granular per-feature analysis showing exactly which input distributions have changed since training — enabling targeted investigation of data quality issues, pipeline changes, or genuine shifts in customer behavior. For an accessible deep dive into interpreting drift scores and PSI calculations, see [Understanding Drift Scores: A Visual Guide](docs/screenshots/quicksight/README.md). To extend your dashboard with additional feature-level drift visuals (timelines, top drifting features, severity distributions), see [Feature-Level Drift Analysis Implementation Guide](docs/screenshots/quicksight/FEATURE_LEVEL_SUMMARY.md).
 
 ---
 
@@ -2513,6 +2513,27 @@ The entire PoC is driven by **three notebooks** in SageMaker Studio. Each notebo
 **QuickSight Governance Dashboard:**
 
 > 📄 [View Governance Dashboard (PDF)](docs/screenshots/quicksight/Quicksight-Governance-dashboard.pdf)
+
+**Extending with Feature-Level Drift Analysis:**
+
+The default dashboard provides high-level inference and model performance metrics. For detailed feature-level drift analysis, you can extend the dashboard with additional visuals:
+
+- **Feature Drift Timeline**: Line chart showing how individual features drift over time (compare credit_limit vs. merchant_category vs. account_age)
+- **Top Drifting Features**: Horizontal bar chart ranking features by average drift score
+- **Drift Severity Distribution**: Stacked bar chart showing Low/Moderate/Significant drift counts per feature
+- **Feature Drift Detail Table**: Sortable table with all feature drift metrics
+
+**Implementation:** The [Feature-Level Drift Analysis Guide](docs/screenshots/quicksight/FEATURE_LEVEL_SUMMARY.md) provides:
+- Pre-built Athena view (`feature_drift_detail`) that unpacks per-feature drift scores
+- Copy-paste Python code to add 6 new visuals to your dashboard
+- SQL queries and visualization configurations
+- Step-by-step implementation checklist
+
+**When to use:** Add these visuals when you need to:
+- Investigate which specific features are drifting (not just overall drift detection)
+- Prioritize retraining efforts by identifying the worst offenders
+- Distinguish data quality issues from genuine distribution shifts
+- Monitor drift patterns across your 29+ input features
 
 ## Cost Optimization
 

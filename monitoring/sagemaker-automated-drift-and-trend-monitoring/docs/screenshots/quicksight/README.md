@@ -90,7 +90,7 @@ Like a fever thermometer for your model:
 
 ### Visual 1: Feature Drift Score Timeline
 
-![Feature Drift Timeline Example](No-Major-feature-drift.png)
+![Feature Drift Timeline Example](DriftScore-Average.png)
 
 This line chart shows **how drift evolves over time** for each feature:
 
@@ -595,8 +595,8 @@ PSI = Σ (Actual% - Expected%) × ln(Actual% / Expected%)
 
 - **Main README:** `/README.md` — Complete system architecture
 - **Drift Configuration:** `/src/config/config.yaml` — Adjust thresholds and sensitivity
-- **Variable Drift Patterns:** `/docs/guides/claude/VARIABLE_DRIFT_PATTERNS.md` — Simulate different drift scenarios
 - **QuickSight Setup:** `/notebooks/3_governance_dashboard.ipynb` — Dashboard creation
+- **Feature-Level Drift Visuals:** `FEATURE_LEVEL_SUMMARY.md` — Add detailed per-feature drift analysis to your dashboard
 
 ---
 
