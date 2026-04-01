@@ -1,6 +1,6 @@
 # SageMaker Endpoint Monitoring with Amazon Managed Grafana
 
-Grafana dashboards for SageMaker inference endpoints, built on the [Enhanced Container Metrics](https://docs.aws.amazon.com/sagemaker/latest/dg/inference-enhanced-metrics.html) recently released for SageMaker AI. These metrics provide per-GPU, per-container, and per-inference-component observability at 10-second granularity.
+Grafana dashboards for SageMaker inference endpoints, built on the [Enhanced Container Metrics](https://aws.amazon.com/blogs/machine-learning/enhanced-metrics-for-amazon-sagemaker-ai-endpoints-deeper-visibility-for-better-performance/) recently released for SageMaker AI. These metrics provide per-GPU, per-container, and per-inference-component observability at 10-second granularity.
 
 This builds on the [Enhanced Metrics Notebook](https://github.com/aws-samples/sagemaker-genai-hosting-examples/blob/main/03-features/observability/enhanced-metrics-notebook.ipynb) which demonstrates collecting these metrics via CloudWatch APIs and matplotlib — here we replicate the same visualizations in a persistent, auto-refreshing Grafana dashboard.
 
