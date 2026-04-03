@@ -1,0 +1,9 @@
+{
+  "sns_topic_arn": "arn:aws:sns:us-east-1:<ACCOUNT_ID>:fraud-detection-drift-alerts",
+  "lambda_function_arn": "arn:aws:lambda:us-east-1:<ACCOUNT_ID>:function:fraud-detection-drift-monitor",
+  "eventbridge_rule_arn": "arn:aws:events:us-east-1:<ACCOUNT_ID>:rule/fraud-detection-drift-check",
+  "schedule": "cron(0 2 * * ? *)",
+  "data_drift_threshold": "0.2",
+  "model_drift_threshold": "0.05",
+  "email": "your-email@example.com"
+}

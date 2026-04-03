@@ -1,0 +1,14 @@
+FROM public.ecr.aws/lambda/python:3.11
+
+# Install dependencies
+COPY requirements_lambda.txt .
+RUN pip install --no-cache-dir -r requirements_lambda.txt
+
+# Copy Lambda code
+COPY src/drift_monitoring/lambda_drift_monitor.py ${LAMBDA_TASK_ROOT}/
+COPY src/drift_monitoring/evidently_reports.py ${LAMBDA_TASK_ROOT}/
+COPY src/__init__.py ${LAMBDA_TASK_ROOT}/src/
+COPY src/drift_monitoring/__init__.py ${LAMBDA_TASK_ROOT}/src/drift_monitoring/
+
+# Set the CMD to your handler
+CMD [ "lambda_drift_monitor.lambda_handler" ]

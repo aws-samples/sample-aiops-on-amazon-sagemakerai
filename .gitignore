@@ -18,7 +18,7 @@ __pycache__/
 *.so
 
 # Large data files — upload to S3 via src/setup/upload_data_to_s3.py
-monitoring/automated-drift-monitoring-evidently/data/*.csv
+monitoring/sagemaker-automated-drift-and-trend-monitoring/data/*.csv
 .Python
 build/
 develop-eggs/
@@ -50,4 +50,4 @@ ENV/
 Thumbs.db
 
 # Downloaded icons cache (for diagram generation)
-monitoring/automated-drift-monitoring-evidently/docs/icons/
+monitoring/sagemaker-automated-drift-and-trend-monitoring/docs/icons/
