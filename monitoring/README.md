@@ -14,7 +14,7 @@ This folder contains four comprehensive monitoring solutions for different ML/AI
 - **Interactive Reports**: HTML/JSON Evidently reports saved to S3 and MLflow artifacts for visual exploration and programmatic access.
 - **Batch Transform Integration**: Cost-effective inference without always-on endpoints, with predictions feeding directly into monitoring pipeline.
 
-### 2. [Real-Time Inference Monitoring with QuickSight dashboards](./automated-drift-monitoring-evidently/)
+### 2. [Real-Time Inference Monitoring with QuickSight dashboards](./sagemaker-automated-drift-and-trend-monitoring/)
 Production-grade end-to-end solution for real-time endpoint monitoring with Athena data lake integration. Features ground truth capture, PSI-based drift detection, and automated retraining triggers. Best for always-on fraud detection or similar production workloads.
 
 ### 3. [LLM Inference Monitoring](./sagemaker-endpoint-llm-monitoring/)
