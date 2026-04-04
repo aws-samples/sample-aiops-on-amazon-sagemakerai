@@ -9,18 +9,18 @@ The AWS ModelOps covering GenAIOps and MLOps patterns involing SageMakerAI resou
 ```
 .
 ├── workshops/                                      # Technical workshops
-│   └── aiops-with-sagemaker-mlflow/                # ModelOps with SageMakerAI Managed MLflow
-├── operations/                                     # Operational guides
-│   └── sagemaker-mlflow-migration/                 # MLflow data migration guide
+│   └── aiops-with-sagemaker-mlflow/                          # ModelOps with SageMakerAI Managed MLflow
+├── operations/                                               # Operational guides
+│   └── sagemaker-mlflow-migration/                           # MLflow data migration guide
 ├── monitoring/                                     # All monitoring solutions
-│   ├── predictiveml-batch-monitoring-pipeline/     # Batch ML monitoring with EvidentlyAI
-│   ├── automated-drift-monitoring-evidently/       # Real-time inference monitoring
-│   ├── sagemaker-endpoint-llm-monitoring/          # LLM inference monitoring
-│   └── resource-monitoring-grafana/                # Resource & cost monitoring with Grafana
+│   ├── predictiveml-batch-monitoring-pipeline/               # Batch ML monitoring with EvidentlyAI
+│   ├── sagemaker-automated-drift-and-trend-monitoring/       # Serverless endpoint monitoring with meta monitoring 
+│   ├── sagemaker-endpoint-llm-monitoring/                    # LLM inference monitoring
+│   └── resource-monitoring-grafana/                          # Resource & cost monitoring with Grafana
 ├── examples/                                       # Integration examples
-│   └── sagemaker-mlflow-agentcore-runtime/         # MLflow observability for Bedrock Agents
-├── LICENSE                                         # MIT-0 License
-└── README.md                                       # This file
+│   └── sagemaker-mlflow-agentcore-runtime/                   # MLflow observability for Bedrock Agents
+├── LICENSE                                                   # MIT-0 License
+└── README.md                                                 # This file
 ```
 
 ### Workshops
