@@ -1,6 +1,0 @@
-evidently>=0.4.22,<1
-pandas<3
-numpy<2
-scipy<2
-scikit-learn<2
-boto3

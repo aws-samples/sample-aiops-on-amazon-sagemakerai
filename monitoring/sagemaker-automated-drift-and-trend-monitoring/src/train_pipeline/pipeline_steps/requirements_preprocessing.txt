@@ -1,5 +1,0 @@
-# PySpark preprocessing dependencies for PySparkProcessor
-# Note: PySpark 3.3 is pre-installed in PySparkProcessor image
-# AWS Glue Data Catalog integration is pre-configured
-# Only need boto3 for S3 operations (consolidating CSV files)
-boto3>=1.34.0
