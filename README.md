@@ -42,7 +42,7 @@ Educational two-phase solution for learning and implementing batch ML monitoring
 
 #### [Automated Drift and Trend Monitoring for ML Models](./monitoring/sagemaker-automated-drift-and-trend-monitoring/)
 
-Production-grade real-time inference monitoring with automated drift detection using SageMaker Pipelines, MLflow, Evidently AI, and QuickSight governance dashboards. Includes training pipeline, async inference logging, EventBridge-scheduled drift checks, SNS alerting, and configurable thresholds. **Full solution has moved to [https://github.com/aws-samples/sample-mlops-bestpractices](https://github.com/aws-samples/sample-mlops-bestpractices).**
+Production-grade real-time inference monitoring with automated drift detection using SageMaker Pipelines, MLflow, Evidently AI, and QuickSight governance dashboards. Includes training pipeline, async inference logging, EventBridge-scheduled drift checks, SNS alerting, and configurable thresholds. **Full solution has moved to [sample-mlops-bestpractices](https://github.com/aws-samples/sample-mlops-bestpractices).**
 
 
 #### [SageMaker Endpoint LLM Inference Monitoring with MLflow and GenAI Evaluations](./monitoring/sagemaker-endpoint-llm-monitoring/)
