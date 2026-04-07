@@ -14,7 +14,7 @@ The AWS ModelOps covering GenAIOps and MLOps patterns involing SageMakerAI resou
 │   └── sagemaker-mlflow-migration/                 # MLflow data migration guide
 ├── monitoring/                                     # All monitoring solutions
 │   ├── predictiveml-batch-monitoring-pipeline/     # Batch ML monitoring with EvidentlyAI
-│   ├── automated-drift-monitoring-evidently/       # Real-time inference monitoring
+│   ├── sagemaker-automated-drift-and-trend-monitoring/ # Real-time inference monitoring (→ moved to sample-mlops-bestpractices)
 │   ├── sagemaker-endpoint-llm-monitoring/          # LLM inference monitoring
 │   └── resource-monitoring-grafana/                # Resource & cost monitoring with Grafana
 ├── examples/                                       # Integration examples
@@ -39,6 +39,10 @@ The AWS ModelOps covering GenAIOps and MLOps patterns involing SageMakerAI resou
 > Various Monitoring solutions for SageMakerAI. See the [folder directory for information](./monitoring/). 
 #### [Predictive ML Batch Monitoring Pipeline with Evidently AI and MLflow](./monitoring/predictiveml-batch-monitoring-pipeline/)
 Educational two-phase solution for learning and implementing batch ML monitoring. Uses Evidently AI for data drift detection and model quality tracking with SageMaker Pipelines automation. Ideal for periodic batch predictions and learning monitoring fundamentals.
+
+#### [Automated Drift and Trend Monitoring for ML Models](./monitoring/sagemaker-automated-drift-and-trend-monitoring/)
+
+Production-grade real-time inference monitoring with automated drift detection using SageMaker Pipelines, MLflow, Evidently AI, and QuickSight governance dashboards. Includes training pipeline, async inference logging, EventBridge-scheduled drift checks, SNS alerting, and configurable thresholds. **Full solution has moved to [sample-mlops-bestpractices](https://github.com/aws-samples/sample-mlops-bestpractices).**
 
 
 #### [SageMaker Endpoint LLM Inference Monitoring with MLflow and GenAI Evaluations](./monitoring/sagemaker-endpoint-llm-monitoring/)
