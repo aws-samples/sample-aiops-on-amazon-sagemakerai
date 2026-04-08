@@ -106,7 +106,7 @@ fastmcp==2.12.3
     # via mlflow
 flask==3.1.2
     # via mlflow
-fonttools==4.60.0
+fonttools==4.61.0
     # via matplotlib
 frozendict==2.4.6
     # via yfinance
