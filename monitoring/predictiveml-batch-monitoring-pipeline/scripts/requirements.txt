@@ -1,4 +1,4 @@
-mlflow==3.4.0
+mlflow==3.11.0rc1
 sagemaker-mlflow==0.2.0
 evidently>=0.7.20
 pandas>=2.0.0
