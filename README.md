@@ -8,17 +8,19 @@ The AWS ModelOps covering GenAIOps and MLOps patterns involing SageMakerAI resou
 ### Repository Structure
 ```
 .
-├── workshops/                               # Technical workshops
-│   └── aiops-with-sagemaker-mlflow/        # ModelOps with SageMakerAI Managed MLflow
-├── operations/                              # Operational guides
-│   └── sagemaker-mlflow-migration/         # MLflow data migration guide
-├── monitoring/                              # Production monitoring solutions
-│   ├── predictiveml-batch-monitoring-pipeline/      # Batch ML monitoring with EvidentlyAI
-│   └── sagemaker-endpoint-llm-monitoring/           # LLM inference monitoring
-├── examples/                                # Integration examples
-│   └── sagemaker-mlflow-agentcore-runtime/ # MLflow observability for Bedrock Agents
-├── LICENSE                                  # MIT-0 License
-└── README.md                                # This file
+├── workshops/                                      # Technical workshops
+│   └── aiops-with-sagemaker-mlflow/                # ModelOps with SageMakerAI Managed MLflow
+├── operations/                                     # Operational guides
+│   └── sagemaker-mlflow-migration/                 # MLflow data migration guide
+├── monitoring/                                     # All monitoring solutions
+│   ├── predictiveml-batch-monitoring-pipeline/     # Batch ML monitoring with EvidentlyAI
+│   ├── sagemaker-automated-drift-and-trend-monitoring/ # Real-time inference monitoring (→ moved to sample-mlops-bestpractices)
+│   ├── sagemaker-endpoint-llm-monitoring/          # LLM inference monitoring
+│   └── resource-monitoring-grafana/                # Resource & cost monitoring with Grafana
+├── examples/                                       # Integration examples
+│   └── sagemaker-mlflow-agentcore-runtime/         # MLflow observability for Bedrock Agents
+├── LICENSE                                         # MIT-0 License
+└── README.md                                       # This file
 ```
 
 ### Workshops
@@ -34,38 +36,21 @@ The AWS ModelOps covering GenAIOps and MLOps patterns involing SageMakerAI resou
 - Includes step-by-step notebooks for data setup, export, and import processes with sample MLflow objects (experiments, runs, traces, registered models, and version-specific features like prompts and logged models).
 
 ### Monitoring
-
+> Various Monitoring solutions for SageMakerAI. See the [folder directory for information](./monitoring/). 
 #### [Predictive ML Batch Monitoring Pipeline with Evidently AI and MLflow](./monitoring/predictiveml-batch-monitoring-pipeline/)
-- **Two-phase educational solution** for implementing production-ready batch ML monitoring on Amazon SageMaker: experimentation notebook for learning fundamentals, followed by automated pipeline for operations.
-- **Data Drift Detection**: Statistical comparison of current vs. baseline data distributions using Evidently AI's DataDriftPreset with automatic threshold-based alerting.
-- **Model Quality Tracking**: Binary classification performance metrics (Accuracy, Precision, Recall, F1, AUC) with Evidently's ClassificationPreset for model degradation monitoring.
-- **Automated SageMaker Pipeline**: Orchestrates batch inference and monitoring workflow with scheduled execution via EventBridge (daily/weekly/monthly).
-- **Unified MLflow Integration**: Single experiment tracking server for both training and monitoring runs, enabling complete model lineage and drift trend analysis.
-- **Email Alerting**: SNS notifications when drift exceeds configurable thresholds, including detailed drift summary and MLflow run links.
-- **Interactive Reports**: HTML/JSON Evidently reports saved to S3 and MLflow artifacts for visual exploration and programmatic access.
-- **Batch Transform Integration**: Cost-effective inference without always-on endpoints, with predictions feeding directly into monitoring pipeline.
+Educational two-phase solution for learning and implementing batch ML monitoring. Uses Evidently AI for data drift detection and model quality tracking with SageMaker Pipelines automation. Ideal for periodic batch predictions and learning monitoring fundamentals.
+
+#### [Automated Drift and Trend Monitoring for ML Models](./monitoring/sagemaker-automated-drift-and-trend-monitoring/)
+
+Production-grade real-time inference monitoring with automated drift detection using SageMaker Pipelines, MLflow, Evidently AI, and QuickSight governance dashboards. Includes training pipeline, async inference logging, EventBridge-scheduled drift checks, SNS alerting, and configurable thresholds. **Full solution has moved to [sample-mlops-bestpractices](https://github.com/aws-samples/sample-mlops-bestpractices).**
 
 
 #### [SageMaker Endpoint LLM Inference Monitoring with MLflow and GenAI Evaluations](./monitoring/sagemaker-endpoint-llm-monitoring/)
-- Automated serverless infrastructure for monitoring SageMaker LLM endpoint inferences using AWS CDK, MLflow traces, and MLflow GenAI evaluations.
-- Event-driven architecture using S3 Data Capture, EventBridge, Step Functions, and Lambda for real-time inference monitoring.
-- Implements MLflow GenAI evaluations (Safety, Relevance, Fluency, Guidelines, Coherence) using Amazon Bedrock models for comprehensive quality assessment.
-- Supports multiple deployment environments (dev, staging, prod) with unique resource naming via configurable stack prefixes.
-- Includes complete CDK infrastructure-as-code with Docker-based Lambda functions, comprehensive documentation, and cost optimization guidance.
+Serverless CDK infrastructure for monitoring LLM endpoints using MLflow GenAI evaluations (Safety, Relevance, Fluency, Guidelines, Coherence). Event-driven architecture with Amazon Bedrock integration for comprehensive quality assessment of large language models.
 
-#### Choosing the Right Monitoring Solution
+#### [SageMaker Resource Monitoring with Amazon Managed Grafana](./monitoring/resource-monitoring-grafana/)
+Amazon Managed Grafana dashboards for SageMaker endpoint resource monitoring using Enhanced Container Metrics. Provides per-GPU, per-container, and per-inference-component observability at 10-second granularity with cost attribution, GPU/CPU/memory utilization tracking. Best for infrastructure monitoring and cost optimization of multi-model endpoints.
 
-| Criteria | Batch Monitoring Pipeline | Real-Time Inference Monitoring | LLM Monitoring |
-|----------|---------------------------|--------------------------------|----------------|
-| **Use Case** | Periodic batch predictions | Always-on endpoint inference | LLM endpoint evaluation |
-| **Inference Type** | Batch Transform | Real-time endpoint | Real-time endpoint |
-| **Deployment** | Educational (2 notebooks) | Production-ready (full pipeline) | Production CDK |
-| **Data Storage** | S3 CSV files | Athena data lake (Iceberg) | S3 Data Capture |
-| **Monitoring** | Data drift + model quality | Drift + performance + ground truth | GenAI evaluations |
-| **Alerting** | SNS email | SNS email + MLflow | Step Functions |
-| **Best For** | Learning ML monitoring | Production fraud detection | LLM safety/quality |
-| **Setup Time** | 30-45 minutes | 2-3 hours | 1-2 hours |
-| **Infrastructure** | SageMaker Pipeline | SageMaker + Lambda + Athena | CDK Serverless |
 
 ### Examples
 #### [SageMaker Managed MLflow Observability for Strands Agents on Amazon Bedrock AgentCore](./examples/sagemaker-mlflow-agentcore-runtime/)
