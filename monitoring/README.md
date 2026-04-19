@@ -5,14 +5,15 @@ This folder contains four comprehensive monitoring solutions for different ML/AI
 ## Available Solutions
 
 ### 1. [Predictive ML Batch Monitoring Pipeline](./predictiveml-batch-monitoring-pipeline/)
-- **Monitoring solution** for implementing production-ready batch ML monitoring on Amazon SageMakerAI: experimentation notebook for learning fundamentals, followed by automated pipeline for operations.
+- **Monitoring solution** for implementing batch ML monitoring on Amazon SageMakerAI: experimentation notebook, data drift and data quality automation notebook, and a separate model quality example notebook.
 - **Data Drift Detection**: Statistical comparison of current vs. baseline data distributions using Evidently AI's DataDriftPreset with automatic threshold-based alerting.
-- **Model Quality Tracking**: Binary classification performance metrics (Accuracy, Precision, Recall, F1, AUC) with Evidently's ClassificationPreset for model degradation monitoring.
-- **Automated SageMaker Pipeline**: Orchestrates batch inference and monitoring workflow with scheduled execution via EventBridge (daily/weekly/monthly).
+- **Data Quality Checks**: Missing values, duplicate rows, row counts, and Evidently data summary reports logged to MLflow.
+- **Separate Model Quality Tracking**: Binary classification performance metrics (Accuracy, Precision, Recall, F1, AUC) are handled in a third notebook when predictions and ground truth labels are available.
+- **Automated SageMaker Pipeline**: Orchestrates data drift and data quality monitoring with scheduled execution via EventBridge (daily/weekly/monthly).
 - **Unified MLflow Integration**: Single experiment tracking server for both training and monitoring runs, enabling complete model lineage and drift trend analysis.
 - **Email Alerting**: SNS notifications when drift exceeds configurable thresholds, including detailed drift summary and MLflow run links.
 - **Interactive Reports**: HTML/JSON Evidently reports saved to S3 and MLflow artifacts for visual exploration and programmatic access.
-- **Batch Transform Integration**: Cost-effective inference without always-on endpoints, with predictions feeding directly into monitoring pipeline.
+- **Explicit S3 Input Files**: The automation notebook passes exact baseline and current CSV file locations by default, with optional latest-file pickup for simple scheduled demos.
 
 ### 2. [Real-Time Inference Monitoring with QuickSight dashboards](./sagemaker-automated-drift-and-trend-monitoring/)
 Production-grade end-to-end solution for real-time endpoint monitoring with Athena data lake integration. Features ground truth capture, PSI-based drift detection, and automated retraining triggers. Best for always-on fraud detection or similar production workloads.
@@ -37,11 +38,11 @@ Production-grade end-to-end solution for real-time endpoint monitoring with Athe
 
 | Criteria | Batch Monitoring | Real-Time Inference | LLM Monitoring | Resource Monitoring |
 |----------|------------------|---------------------|----------------|---------------------|
-| **Use Case** | Periodic batch predictions | Always-on endpoint inference | LLM endpoint evaluation | Infrastructure & cost tracking |
-| **Inference Type** | Batch Transform | Real-time endpoint | Real-time endpoint | Real-time endpoint |
-| **Deployment** | Educational (2 notebooks) | Production-ready (full pipeline) | Production CDK | Grafana dashboard |
+| **Use Case** | Periodic batch monitoring | Always-on endpoint inference | LLM endpoint evaluation | Infrastructure & cost tracking |
+| **Inference Type** | Batch files, optional Batch Transform in experimentation | Real-time endpoint | Real-time endpoint | Real-time endpoint |
+| **Deployment** | Educational (3 notebooks) | Production-ready (full pipeline) | Production CDK | Grafana dashboard |
 | **Data Storage** | S3 CSV files | Athena data lake (Iceberg) | S3 Data Capture | CloudWatch Metrics |
-| **Monitoring Focus** | Data drift + model quality | Drift + performance + ground truth | GenAI evaluations | GPU/CPU/memory + cost |
+| **Monitoring Focus** | Data drift + data quality, optional model quality notebook | Drift + performance + ground truth | GenAI evaluations | GPU/CPU/memory + cost |
 | **Metrics Granularity** | Per-batch run | Per-inference request | Per-inference request | 10-second intervals |
 | **Alerting** | SNS email | SNS email + MLflow | Step Functions | Grafana alerts |
 | **Best For** | Learning ML monitoring | Production fraud detection | LLM safety/quality | Multi-model cost optimization |
