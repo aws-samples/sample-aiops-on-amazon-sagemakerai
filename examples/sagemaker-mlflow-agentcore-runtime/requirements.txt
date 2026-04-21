@@ -334,7 +334,7 @@ python-dateutil==2.9.0.post0
     #   graphene
     #   matplotlib
     #   pandas
-python-dotenv==1.1.1
+python-dotenv==1.2.2
     # via
     #   strands-agentcore-sagemaker-mlflow (pyproject.toml)
     #   fastmcp
