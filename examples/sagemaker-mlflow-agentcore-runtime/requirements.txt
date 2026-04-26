@@ -112,7 +112,7 @@ frozendict==2.4.6
     # via yfinance
 gitdb==4.0.12
     # via gitpython
-gitpython==3.1.45
+gitpython==3.1.47
     # via mlflow-skinny
 google-auth==2.40.3
     # via databricks-sdk
