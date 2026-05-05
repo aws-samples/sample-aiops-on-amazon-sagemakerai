@@ -1,0 +1,22 @@
+{
+  "name": "predictiveml-monitoring-cdk",
+  "version": "1.0.0",
+  "bin": {
+    "predictiveml-monitoring-cdk": "bin/predictiveml-monitoring-cdk.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "cdk": "cdk"
+  },
+  "devDependencies": {
+    "@types/node": "20.12.7",
+    "aws-cdk": "^2.250.0",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.4.5"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "2.250.0",
+    "constructs": "^10.0.0",
+    "source-map-support": "^0.5.21"
+  }
+}
