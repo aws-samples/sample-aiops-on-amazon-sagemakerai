@@ -38,17 +38,17 @@ This folder contains six comprehensive monitoring solutions for different ML/AI 
 - Supports multiple deployment environments (dev, staging, prod) with unique resource naming via configurable stack prefixes.
 - Includes complete CDK infrastructure-as-code with Docker-based Lambda functions, comprehensive documentation, and cost optimization guidance.
 
-### 5. [SageMaker Resource Monitoring with Grafana](./resource-monitoring-grafana/)
+### 5. [SageMaker Resource Observability with Grafana](./resource-monitoring-grafana/)
 - **Infrastructure observability** dashboards for SageMaker inference endpoints using Enhanced Container Metrics for per-GPU, per-container, and per-inference-component visibility at 10-second granularity.
 - **Cost Attribution**: Real-time hourly cost tracking based on GPU allocation and per-model resource usage for multi-model endpoints.
 - **Resource Utilization**: GPU compute, GPU memory, CPU, and memory utilization metrics with threshold indicators and cluster-level overview.
 - **Automated Setup**: Single Jupyter notebook deploys Grafana workspace, IAM roles, CloudWatch data sources, and all dashboard panels programmatically.
 - **Production Monitoring**: Persistent, auto-refreshing dashboards for capacity planning, cost optimization, and performance tuning of GPU-accelerated inference workloads.
 
-### 6. [LLM Quality Monitoring with Grafana](./quality-monitoring-with-grafana/)
+### 6. [LLM Quality Observability with Grafana](./quality-monitoring-with-grafana/)
 - **LLM output quality dashboards** for SageMaker inference components using MLflow GenAI Evaluations with Bedrock Claude as an LLM-as-judge scorer.
 - **Quality Metrics**: Safety, relevance, professional tone, and composite quality scores published as custom CloudWatch metrics per inference component.
-- **Automated Alerting**: Grafana unified alerting with threshold-based rules (low safety, low relevance, low composite quality) that fire per inference component.
+- **Automated Alerting**: Amazon Managed Grafana unified alerting with threshold-based rules (low safety, low relevance, low composite quality) that fire per inference component.
 - **SNS Notifications**: Optional email alerting via SNS when quality scores breach thresholds, with automated topic creation and Grafana contact point configuration.
 - **Evaluation Latency Tracking**: End-to-end latency monitoring of the quality evaluation pipeline (inference + LLM-as-judge scoring).
 - **Extends Resource Monitoring**: Builds on the Resource Monitoring with Grafana solution, adding LLM output quality metrics alongside infrastructure observability.
