@@ -12,11 +12,8 @@ The AWS ModelOps covering GenAIOps and MLOps patterns involing SageMakerAI resou
 │   └── aiops-with-sagemaker-mlflow/                # ModelOps with SageMakerAI Managed MLflow
 ├── operations/                                     # Operational guides
 │   └── sagemaker-mlflow-migration/                 # MLflow data migration guide
-├── monitoring/                                     # All monitoring solutions
-│   ├── predictiveml-batch-monitoring-pipeline/     # Batch ML monitoring with EvidentlyAI
-│   ├── sagemaker-automated-drift-and-trend-monitoring/ # Real-time inference monitoring (→ moved to sample-mlops-bestpractices)
-│   ├── sagemaker-endpoint-llm-monitoring/          # LLM inference monitoring
-│   └── resource-monitoring-grafana/                # Resource & cost monitoring with Grafana
+├── monitoring/                                     # All monitoring and observability solutions
+│   └── ...
 ├── examples/                                       # Integration examples
 │   └── sagemaker-mlflow-agentcore-runtime/         # MLflow observability for Bedrock Agents
 ├── LICENSE                                         # MIT-0 License
