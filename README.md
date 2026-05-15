@@ -54,7 +54,7 @@ Serverless CDK infrastructure for LLM endpoint monitoring using MLflow GenAI eva
 Amazon Managed Grafana dashboards for endpoint infrastructure monitoring — per-GPU, per-container metrics, cost attribution, and resource utilization at 10-second granularity.
 
 #### [LLM Quality Observability with Grafana](./monitoring/quality-monitoring-with-grafana/)
-Grafana dashboards for LLM output quality scoring using MLflow GenAI Evaluations with Bedrock Claude as LLM-as-judge, with automated alerting via unified alerting and SNS.
+Grafana dashboards for LLM output quality scoring using GenAI Evaluations with Bedrock Claude as LLM-as-judge, with automated alerting via unified alerting and SNS.
 
 
 ### Examples
