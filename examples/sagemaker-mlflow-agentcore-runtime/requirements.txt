@@ -294,7 +294,7 @@ protobuf==6.32.1
     #   yfinance
 py-openapi-schema-to-json-schema==0.0.3
     # via bedrock-agentcore-starter-toolkit
-pyarrow==21.0.0
+pyarrow==23.0.1
     # via mlflow
 pyasn1==0.6.1
     # via
