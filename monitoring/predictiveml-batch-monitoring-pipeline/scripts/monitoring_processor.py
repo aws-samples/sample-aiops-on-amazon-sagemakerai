@@ -497,7 +497,7 @@ def main():
         "monitoring_timestamp": timestamp,
     }
     summary_path = os.path.join(output_dir, "monitoring_summary.json")
-    with open(summary_path, "w") as f:
+    with open(summary_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
 
     logger.info("Monitoring processing job completed successfully!")
