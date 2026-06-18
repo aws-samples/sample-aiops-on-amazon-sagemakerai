@@ -120,9 +120,13 @@ def download_csv(bucket: str, key: str) -> pd.DataFrame:
     Note:
         Uses a temporary file to avoid memory issues with large datasets.
     """
-    with tempfile.NamedTemporaryFile(suffix=".csv") as tmp:
+    tmp = tempfile.NamedTemporaryFile(suffix=".csv", delete=False)
+    tmp.close()
+    try:
         s3_client.download_file(bucket, key, tmp.name)
         df = pd.read_csv(tmp.name)
+    finally:
+        os.unlink(tmp.name)
     logger.info("Loaded %d rows x %d cols from s3://%s/%s", len(df), len(df.columns), bucket, key)
     return df
 
