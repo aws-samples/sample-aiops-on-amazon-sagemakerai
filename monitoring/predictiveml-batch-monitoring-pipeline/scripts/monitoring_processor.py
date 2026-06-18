@@ -27,9 +27,9 @@ import subprocess
 import sys
 
 subprocess.check_call([
-    sys.executable, '-m', 'pip', 'install', '-U',
+    'python3', '-m', 'pip', 'install', '-U',
     'evidently>=0.7.20', 'pandas', 'numpy', 'scikit-learn',
-    'mlflow==3.4.2', 'sagemaker-mlflow==0.2.0', 's3fs',
+    'mlflow==3.10.0', 'sagemaker-mlflow==0.2.0', 's3fs',
     'protobuf==3.20.3', '--no-cache-dir', '--ignore-installed'
 ])
 
