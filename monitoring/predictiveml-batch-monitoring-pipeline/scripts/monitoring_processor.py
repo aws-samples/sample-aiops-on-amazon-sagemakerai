@@ -23,9 +23,15 @@ Output Channel:
 - /opt/ml/processing/output: Evidently reports and monitoring summary (HTML/JSON)
 """
 import os
+import subprocess
 import sys
 
-os.system(f'{sys.executable} -m pip install -U evidently>=0.7.20 pandas numpy scikit-learn mlflow==3.1.4 sagemaker-mlflow==0.2.0 s3fs protobuf==3.20.3 --no-cache-dir --ignore-installed')
+subprocess.check_call([
+    sys.executable, '-m', 'pip', 'install', '-U',
+    'evidently>=0.7.20', 'pandas', 'numpy', 'scikit-learn',
+    'mlflow==3.4.2', 'sagemaker-mlflow==0.2.0', 's3fs',
+    'protobuf==3.20.3', '--no-cache-dir', '--ignore-installed'
+])
 
 import argparse
 import json
