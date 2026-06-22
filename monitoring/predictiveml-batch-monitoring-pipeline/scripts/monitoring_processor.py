@@ -62,9 +62,6 @@ def parse_s3_uri(uri: str):
 
     Returns:
         tuple: (bucket_name, key_path)
-
-    Example:
-        parse_s3_uri('s3://my-bucket/data/file.csv') -> ('my-bucket', 'data/file.csv')
     """
     path = uri.replace("s3://", "")
     bucket, _, key = path.partition("/")
