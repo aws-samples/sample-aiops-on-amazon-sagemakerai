@@ -1,0 +1,4 @@
+evidently>=0.7.20
+mlflow==3.10.0
+sagemaker-mlflow==0.2.0
+pandas

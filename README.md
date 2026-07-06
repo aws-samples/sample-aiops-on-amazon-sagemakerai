@@ -8,16 +8,16 @@ The AWS ModelOps covering GenAIOps and MLOps patterns involing SageMakerAI resou
 ### Repository Structure
 ```
 .
-├── workshops/                               # Root folder for all workshops
-│   └── ...                                  # Specific workshop folders
-├── operations/                              # Root folder for operational guides
-│   └── ...                                  # Specific operation folders
-├── monitoring/                              # Root folder for monitoring solutions
-│   └── ...                                  # Specific monitoring solution folders
-├── examples/                                # Root folder for all examples
-│   └── ...                                  # Specific example folders
-├── LICENSE                                  # The Repository MIT-0 License
-└── README.md                                # Root folder Repository documentation
+├── workshops/                                      # Technical workshops
+│   └── aiops-with-sagemaker-mlflow/                # ModelOps with SageMakerAI Managed MLflow
+├── operations/                                     # Operational guides
+│   └── sagemaker-mlflow-migration/                 # MLflow data migration guide
+├── monitoring/                                     # All monitoring and observability solutions
+│   └── ...
+├── examples/                                       # Integration examples
+│   └── sagemaker-mlflow-agentcore-runtime/         # MLflow observability for Bedrock Agents
+├── LICENSE                                         # MIT-0 License
+└── README.md                                       # This file
 ```
 
 ### Workshops
@@ -33,12 +33,26 @@ The AWS ModelOps covering GenAIOps and MLOps patterns involing SageMakerAI resou
 - Includes step-by-step notebooks for data setup, export, and import processes with sample MLflow objects (experiments, runs, traces, registered models, and version-specific features like prompts and logged models).
 
 ### Monitoring
-#### [SageMaker Endpoint LLM Inference Monitoring with MLflow and GenAI Evaluations](./monitoring/sagemaker-endpoint-llm-monitoring/)
-- Automated serverless infrastructure for monitoring SageMaker LLM endpoint inferences using AWS CDK, MLflow traces, and MLflow GenAI evaluations.
-- Event-driven architecture using S3 Data Capture, EventBridge, Step Functions, and Lambda for real-time inference monitoring.
-- Implements MLflow GenAI evaluations (Safety, Relevance, Fluency, Guidelines, Coherence) using Amazon Bedrock models for comprehensive quality assessment.
-- Supports multiple deployment environments (dev, staging, prod) with unique resource naming via configurable stack prefixes.
-- Includes complete CDK infrastructure-as-code with Docker-based Lambda functions, comprehensive documentation, and cost optimization guidance.
+> Various monitoring solutions for SageMaker AI. See the [monitoring folder](./monitoring/) for details.
+
+#### [Predictive ML Batch Monitoring Pipeline](./monitoring/predictiveml-batch-monitoring-pipeline/)
+Batch ML monitoring with Evidently AI drift detection, model quality tracking, and SageMaker Pipelines automation with MLflow integration.
+
+#### [Predictive ML Endpoint Monitoring](./monitoring/predictiveml-endpoint-monitoring/)
+Real-time endpoint monitoring with Evidently AI data drift and model quality evaluation, CDK Lambda deployment for production scale, and MLflow tracking.
+
+#### [Automated Drift and Trend Monitoring](./monitoring/sagemaker-automated-drift-and-trend-monitoring/)
+Production-grade drift detection with Athena Iceberg data lake, QuickSight dashboards, and SNS alerting. Full solution at [sample-mlops-bestpractices](https://github.com/aws-samples/sample-mlops-bestpractices).
+
+#### [LLM Inference Monitoring](./monitoring/sagemaker-endpoint-llm-monitoring/)
+Serverless CDK infrastructure for LLM endpoint monitoring using MLflow GenAI evaluations and Amazon Bedrock, with event-driven Step Functions architecture.
+
+#### [SageMaker Resource Observability with Grafana](./monitoring/resource-monitoring-grafana/)
+Amazon Managed Grafana dashboards for endpoint infrastructure monitoring — per-GPU, per-container metrics, cost attribution, and resource utilization at 10-second granularity.
+
+#### [LLM Quality Observability with Grafana](./monitoring/quality-monitoring-with-grafana/)
+Grafana dashboards for LLM output quality scoring using GenAI Evaluations with Bedrock Claude as LLM-as-judge, with automated alerting via unified alerting and SNS.
+
 
 ### Examples
 #### [SageMaker Managed MLflow Observability for Strands Agents on Amazon Bedrock AgentCore](./examples/sagemaker-mlflow-agentcore-runtime/)

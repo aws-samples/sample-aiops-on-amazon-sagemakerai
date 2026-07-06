@@ -71,7 +71,7 @@ cloudpickle==3.1.1
     # via mlflow-skinny
 contourpy==1.3.3
     # via matplotlib
-cryptography==45.0.7
+cryptography==46.0.7
     # via
     #   authlib
     #   mlflow
@@ -322,7 +322,7 @@ pydantic-core==2.33.2
     # via pydantic
 pydantic-settings==2.10.1
     # via mcp
-pygments==2.19.2
+pygments==2.20.0
     # via rich
 pyparsing==3.2.4
     # via matplotlib
@@ -416,7 +416,7 @@ sqlalchemy==2.0.43
     # via
     #   alembic
     #   mlflow
-sqlparse==0.5.3
+sqlparse==0.5.4
     # via mlflow-skinny
 sse-starlette==3.0.2
     # via mcp
