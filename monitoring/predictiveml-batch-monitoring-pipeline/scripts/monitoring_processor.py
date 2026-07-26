@@ -44,7 +44,7 @@ from datetime import datetime
 # usually faster and more repeatable.
 subprocess.check_call(
     [
-        sys.executable,
+        python3,
         "-m",
         "pip",
         "install",
@@ -53,7 +53,7 @@ subprocess.check_call(
         "pandas",
         "numpy",
         "scikit-learn",
-        "mlflow==3.4.0",
+        "mlflow==3.10.0",
         "sagemaker-mlflow==0.2.0",
         "protobuf==3.20.3",
         "--no-cache-dir",
@@ -507,7 +507,7 @@ def main():
         }
 
         summary_path = os.path.join(output_dir, "monitoring_summary.json")
-        with open(summary_path, "w") as summary_file:
+        with open(summary_path, "w", encoding="utf-8") as summary_file:
             json.dump(summary, summary_file, indent=2)
 
         mlflow.log_artifact(summary_path, "monitoring_summary")

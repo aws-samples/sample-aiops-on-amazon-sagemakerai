@@ -4,11 +4,10 @@ This folder contains notebook-based examples for monitoring predictive ML batch 
 
 The implementation is split into three notebooks so each monitoring concern is clear:
 
-<<<<<<< ours
+
 1. `predictive_ml_experimentation_data_model_monitoring_evidently.ipynb`
    - Interactive learning notebook.
    - Trains a sample model, runs batch inference, explores data drift, data quality, and model quality.
-=======
 - [Overview](#overview)
 - [Solution Architecture](#solution-architecture)
 - [Key Features](#key-features)
@@ -23,7 +22,6 @@ The implementation is split into three notebooks so each monitoring concern is c
 - [Architecture Details](#architecture-details)
 - [Cleanup](#cleanup)
 - [Additional Resources](#additional-resources)
->>>>>>> theirs
 
 2. `batch_monitoring_pipeline.ipynb`
    - Automation notebook for data drift and data quality only.
