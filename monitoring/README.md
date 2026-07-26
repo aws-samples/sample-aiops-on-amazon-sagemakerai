@@ -5,11 +5,7 @@ This folder contains seven comprehensive monitoring solutions for different ML/A
 ## Available Solutions
 
 ### 1. [Predictive ML Batch Monitoring Pipeline](./predictiveml-batch-monitoring-pipeline/)
-<<<<<<< HEAD
-- **Monitoring solution** for implementing batch ML monitoring on Amazon SageMakerAI: experimentation notebook, data drift and data quality automation notebook, and a separate model quality example notebook.
-=======
-- **Monitoring solution** for implementing production-ready batch ML monitoring on Amazon SageMaker AI: experimentation notebook for learning fundamentals, followed by automated pipeline for operations.
->>>>>>> upstream/main
+<- **Monitoring solution** for implementing production-ready batch ML monitoring on Amazon SageMaker AI: experimentation notebook for learning fundamentals, an automated pipeline notebook for data drift and data quality operations, and a separate model quality example notebook for cases where predictions and ground truth labels are available.
 - **Data Drift Detection**: Statistical comparison of current vs. baseline data distributions using Evidently AI's DataDriftPreset with automatic threshold-based alerting.
 - **Data Quality Checks**: Missing values, duplicate rows, row counts, and Evidently data summary reports logged to MLflow.
 - **Separate Model Quality Tracking**: Binary classification performance metrics (Accuracy, Precision, Recall, F1, AUC) are handled in a third notebook when predictions and ground truth labels are available.
