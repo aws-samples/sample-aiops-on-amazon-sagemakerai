@@ -5,14 +5,15 @@ This folder contains seven comprehensive monitoring solutions for different ML/A
 ## Available Solutions
 
 ### 1. [Predictive ML Batch Monitoring Pipeline](./predictiveml-batch-monitoring-pipeline/)
-- **Monitoring solution** for implementing production-ready batch ML monitoring on Amazon SageMaker AI: experimentation notebook for learning fundamentals, followed by automated pipeline for operations.
+<- **Monitoring solution** for implementing production-ready batch ML monitoring on Amazon SageMaker AI: experimentation notebook for learning fundamentals, an automated pipeline notebook for data drift and data quality operations, and a separate model quality example notebook for cases where predictions and ground truth labels are available.
 - **Data Drift Detection**: Statistical comparison of current vs. baseline data distributions using Evidently AI's DataDriftPreset with automatic threshold-based alerting.
-- **Model Quality Tracking**: Binary classification performance metrics (Accuracy, Precision, Recall, F1, AUC) with Evidently's ClassificationPreset for model degradation monitoring.
-- **Automated SageMaker Pipeline**: Orchestrates batch inference and monitoring workflow with scheduled execution via EventBridge (daily/weekly/monthly).
+- **Data Quality Checks**: Missing values, duplicate rows, row counts, and Evidently data summary reports logged to MLflow.
+- **Separate Model Quality Tracking**: Binary classification performance metrics (Accuracy, Precision, Recall, F1, AUC) are handled in a third notebook when predictions and ground truth labels are available.
+- **Automated SageMaker Pipeline**: Orchestrates data drift and data quality monitoring with scheduled execution via EventBridge (daily/weekly/monthly).
 - **Unified MLflow Integration**: Single experiment tracking server for both training and monitoring runs, enabling complete model lineage and drift trend analysis.
 - **Email Alerting**: SNS notifications when drift exceeds configurable thresholds, including detailed drift summary and MLflow run links.
 - **Interactive Reports**: HTML/JSON Evidently reports saved to S3 and MLflow artifacts for visual exploration and programmatic access.
-- **Batch Transform Integration**: Cost-effective inference without always-on endpoints, with predictions feeding directly into monitoring pipeline.
+- **Explicit S3 Input Files**: The automation notebook passes exact baseline and current CSV file locations by default, with optional latest-file pickup for simple scheduled demos.
 
 ### 2. [Predictive ML Endpoint Monitoring](./predictiveml-endpoint-monitoring/)
 - **Real-time endpoint monitoring** using Evidently AI for data drift detection and model quality evaluation on SageMaker AI inference endpoints with data capture.
@@ -60,6 +61,20 @@ Referral README for the real-time flavor of the [amazon-sagemaker-from-idea-to-p
 
 ## Choosing the Right Monitoring Solution
 
+<<<<<<< HEAD
+| Criteria | Batch Monitoring | Real-Time Inference | LLM Monitoring | Resource Monitoring |
+|----------|------------------|---------------------|----------------|---------------------|
+| **Use Case** | Periodic batch monitoring | Always-on endpoint inference | LLM endpoint evaluation | Infrastructure & cost tracking |
+| **Inference Type** | Batch files, optional Batch Transform in experimentation | Real-time endpoint | Real-time endpoint | Real-time endpoint |
+| **Deployment** | Educational (3 notebooks) | Production-ready (full pipeline) | Production CDK | Grafana dashboard |
+| **Data Storage** | S3 CSV files | Athena data lake (Iceberg) | S3 Data Capture | CloudWatch Metrics |
+| **Monitoring Focus** | Data drift + data quality, optional model quality notebook | Drift + performance + ground truth | GenAI evaluations | GPU/CPU/memory + cost |
+| **Metrics Granularity** | Per-batch run | Per-inference request | Per-inference request | 10-second intervals |
+| **Alerting** | SNS email | SNS email + MLflow | Step Functions | Grafana alerts |
+| **Best For** | Learning ML monitoring | Production fraud detection | LLM safety/quality | Multi-model cost optimization |
+| **Setup Time** | 30-45 minutes | 2-3 hours | 1-2 hours | 15-30 minutes |
+| **Infrastructure** | SageMaker Pipeline | SageMaker + Lambda + Athena | CDK Serverless | Managed Grafana |
+=======
 | Criteria | Batch Monitoring | Endpoint Monitoring | Real-Time + Evidently/SNS | Real-Time Inference | LLM Inference Monitoring | Resource Monitoring | LLM Quality Monitoring |
 |----------|------------------|---------------------|---------------------------|---------------------|--------------------------|---------------------|------------------------|
 | **Use Case** | Periodic batch predictions | Real-time endpoint drift | Real-time endpoint drift alerts | Always-on endpoint inference | LLM endpoint evaluation | Infrastructure & cost tracking | LLM output quality scoring |
@@ -72,3 +87,4 @@ Referral README for the real-time flavor of the [amazon-sagemaker-from-idea-to-p
 | **Best For** | Learning ML monitoring | Real-time endpoint with CDK scale | Learning real-time monitoring on top of an existing workshop | Production fraud detection | LLM safety/quality (event-driven) | Multi-model cost optimization | LLM quality regression detection |
 | **Setup Time** | 30-45 minutes | 45-60 minutes | Runs inside the workshop notebook | 2-3 hours | 1-2 hours | 15-30 minutes | 15-30 minutes |
 | **Infrastructure** | SageMaker Pipeline | CDK Lambda + EventBridge | SageMaker AI Pipeline + EventBridge Scheduler + SNS | SageMaker + Lambda + Athena | CDK Serverless | Managed Grafana | Managed Grafana + CloudWatch |
+>>>>>>> upstream/main

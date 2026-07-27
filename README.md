@@ -35,6 +35,9 @@ The AWS ModelOps covering GenAIOps and MLOps patterns involing SageMakerAI resou
 ### Monitoring
 > Various monitoring solutions for SageMaker AI. See the [monitoring folder](./monitoring/) for details.
 
+#### [Predictive ML Batch Monitoring Pipeline with Evidently AI and MLflow](./monitoring/predictiveml-batch-monitoring-pipeline/)
+Educational three-notebook solution for batch ML monitoring: an experimentation notebook, an automated pipeline for data drift and data quality with explicit S3 input file locations, and a separate example notebook for model quality when predictions and ground truth labels are available.
+
 #### [Predictive ML Batch Monitoring Pipeline](./monitoring/predictiveml-batch-monitoring-pipeline/)
 Batch ML monitoring with Evidently AI drift detection, model quality tracking, and SageMaker Pipelines automation with MLflow integration.
 
