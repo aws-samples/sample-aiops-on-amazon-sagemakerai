@@ -1,4 +1,4 @@
-# Multi-Turn Evaluation & Conversation Simulation with MLflow on Amazon SageMaker AI
+# Multi-Turn Evaluation & Conversation Simulation with Amazon SageMaker AI MLflow Apps
 
 This folder contains the notebook [`multi_turn_eval_simulation.ipynb`](./multi_turn_eval_simulation.ipynb), which demonstrates **MLflow 3.10+ multi-turn evaluation** for assessing conversational AI quality across entire sessions — not just individual turns.
 
