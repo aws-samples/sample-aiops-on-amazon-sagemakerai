@@ -2,12 +2,8 @@
 
 This folder contains notebook-based examples for monitoring predictive ML batch workloads with Amazon SageMaker AI, Evidently, and SageMaker managed MLflow.
 
-The implementation is split into three notebooks so each monitoring concern is clear:
+## Table of Contents
 
-
-1. `predictive_ml_experimentation_data_model_monitoring_evidently.ipynb`
-   - Interactive learning notebook.
-   - Trains a sample model, runs batch inference, explores data drift, data quality, and model quality.
 - [Overview](#overview)
 - [Solution Architecture](#solution-architecture)
 - [Key Features](#key-features)
@@ -15,13 +11,22 @@ The implementation is split into three notebooks so each monitoring concern is c
 - [Getting Started](#getting-started)
   - [Step 1: Experimentation and Learning](#step-1-experimentation-and-learning-notebook-1)
   - [Step 2: Pipeline Automation](#step-2-pipeline-automation-notebook-2)
-  - [Step 3: Model Quality Automation](#step-3-model-quality-automation-notebook-3)
 - [Monitoring Outputs](#monitoring-outputs)
 - [Email Alerts](#email-alerts)
 - [Viewing Results in MLflow](#viewing-results-in-mlflow)
 - [Architecture Details](#architecture-details)
 - [Cleanup](#cleanup)
 - [Additional Resources](#additional-resources)
+
+---
+
+## Overview
+
+The implementation is split into three notebooks so each monitoring concern is clear:
+
+1. `predictive_ml_experimentation_data_model_monitoring_evidently.ipynb`
+   - Interactive learning notebook.
+   - Trains a sample model, runs batch inference, explores data drift, data quality, and model quality.
 
 2. `batch_monitoring_pipeline.ipynb`
    - Automation notebook for data drift and data quality only.
@@ -33,28 +38,23 @@ The implementation is split into three notebooks so each monitoring concern is c
    - Runs when predictions and ground truth labels are available.
    - Logs classification metrics and an Evidently model quality report to MLflow.
 
-## Why Model Quality Is Separate
+### Why Model Quality Is Separate
 
 Data drift and data quality can be checked as soon as a new input data file arrives. Model quality needs predictions and ground truth labels, and ground truth often arrives later.
 
 Keeping model quality out of the second automation solution makes the drift pipeline easier to reuse:
 
-<<<<<<< ours
 - The data drift pipeline only needs a baseline CSV and a current CSV.
 - The model quality pipeline only runs when labels are ready.
 - Customers can schedule the two workflows independently.
 - Failures in delayed-label processing do not block daily data drift checks.
-=======
+
 An optional third notebook adds a separate automated model quality pipeline for cases where predictions and ground truth labels are available on their own schedule.
 
 ---
->>>>>>> theirs
 
-## Recommended Input File Pattern
+## Solution Architecture
 
-<<<<<<< ours
-The recommended pattern is to pass explicit S3 file locations into the monitoring processing job:
-=======
 ### End-to-End Monitoring Workflow
 
 ![Monitoring Workflow](images/arch-sagemaker-inference-predictiveml-monitoring-workflow.png)
@@ -307,26 +307,29 @@ execution.wait()
 
 #### 6. Schedule with EventBridge
 The notebook creates an EventBridge rule that triggers the pipeline automatically:
->>>>>>> theirs
 
 ```python
-baseline_data_s3_uri = "s3://my-bucket/monitoring/baseline/baseline.csv"
-current_data_s3_uri = "s3://my-bucket/monitoring/current/2026-04-18.csv"
+# Runs daily at midnight
+schedule_expression = 'rate(1 day)'
+
+# Or use cron for specific times:
+# schedule_expression = 'cron(0 8 1 * ? *)'  # 8 AM on 1st of each month
 ```
 
-This is usually better for customer plug-and-play than relying only on "latest file" pickup because the caller controls exactly which file is monitored.
+### MLflow Integration
 
-The data drift processor still supports latest-file pickup for simple scheduled demos:
+The pipeline uses the **same MLflow tracking server** as Notebook 1:
 
 ```python
-use_latest_file_pickup = "true"
-baseline_data_s3_uri = "s3://my-bucket/monitoring/baseline/"
-current_data_s3_uri = "s3://my-bucket/monitoring/current/"
+# In both notebooks
+mlflow_app_name = 'DefaultMLFlowApp'
+mlflow_experiment_name = 'test-monitor-pipeline'
+
+# In processing script (monitoring_processor.py)
+mlflow.set_tracking_uri(mlflow_app_arn)
+mlflow.set_experiment(mlflow_experiment_name)
 ```
 
-<<<<<<< ours
-When `use_latest_file_pickup` is true, the processor searches each prefix and selects the newest CSV by S3 `LastModified` time.
-=======
 This ensures:
 - All training and monitoring runs appear in the same experiment
 - You can compare drift metrics across time
@@ -376,111 +379,122 @@ The predictions CSV must include a predicted label column. It can also include a
 ### Metric Visualizations
 
 Track model performance over time:
->>>>>>> theirs
 
-Use explicit file paths when:
+![Accuracy Over Time](images/output_monitoring_Accuracy_lineGraph.png)
 
-- Several files can land in the same prefix close together.
-- An upstream pipeline already knows the exact file to monitor.
-- You need auditability and reproducibility for each monitoring run.
+![F1 Score Over Time](images/output_monitoring_f1score_lineGraph.png)
 
-Use latest-file pickup when:
+### Report Artifacts
 
-- You are building a simple demo.
-- A landing prefix contains only one new file per schedule interval.
-- You accept the risk that object arrival order controls the selected file.
+| Artifact | Format | Contents |
+|----------|--------|----------|
+| **Data Drift Report** | HTML + JSON | Statistical tests, drift scores, distribution plots |
+| **Data Quality Report** | HTML + JSON | Missing values, correlations, data integrity checks |
+| **Model Quality Report** | HTML + JSON | Confusion matrix, ROC curve, precision-recall curves |
 
-## Files
+All reports are stored as MLflow artifacts and S3 objects for auditing and compliance.
 
-| Path | Purpose |
-|---|---|
-| `batch_monitoring_pipeline.ipynb` | Builds the automated data drift and data quality SageMaker Pipeline |
-| `model_quality_monitoring_example.ipynb` | Builds the optional model quality SageMaker Pipeline |
-| `predictive_ml_experimentation_data_model_monitoring_evidently.ipynb` | Interactive experimentation notebook |
-| `scripts/monitoring_processor.py` | Processing script for data drift and data quality only |
-| `scripts/model_quality_processor.py` | Processing script for binary classification model quality |
-| `scripts/requirements.txt` | Python package list used by the examples |
+---
 
-## Notebook 2: Data Drift and Data Quality Automation
+## Email Alerts
 
-`batch_monitoring_pipeline.ipynb` creates:
+When data drift exceeds configured thresholds, the pipeline sends email notifications via SNS:
 
-- A SageMaker Pipeline named `data-drift-quality-monitoring-pipeline`
-- One SageMaker Processing step named `DataDriftAndQualityMonitoring`
-- An optional SNS topic for drift alerts
-- An optional EventBridge Scheduler schedule
-- MLflow runs containing metrics, parameters, and Evidently report artifacts
+![Data Drift Alert Email](images/output_DataDriftAlert_email.png)
 
-The processing script expects:
+The alert includes:
+- Number of features with drift
+- Percentage of features drifted
+- MLflow run ID for detailed investigation
+- Link to HTML drift report in S3
 
-- Baseline CSV with headers
-- Current CSV with the same headers, in the same column order
+### Configuring Alert Thresholds
 
-It logs:
+Edit `scripts/monitoring_processor.py` to customize thresholds:
 
-- `DriftedColumnsCount.count`
-- `DriftedColumnsCount.share`
-- `ValueDrift:<feature>` for features that cross the drift threshold
-- baseline and current row counts
-- baseline and current missing-cell counts
-- baseline and current duplicate-row counts
-- Evidently data drift HTML and JSON reports
-- Evidently data quality HTML and JSON reports
-- `monitoring_summary.json`
+```python
+# Alert if more than 30% of features have drifted
+drift_threshold = 0.30
 
-## Notebook 3: Model Quality Example
+if drift_share > drift_threshold:
+    send_sns_alert(
+        topic_arn=sns_topic_arn,
+        subject='Data Drift Detected',
+        message=f'{drift_count} features drifted ({drift_share:.1%})'
+    )
+```
 
-`model_quality_monitoring_example.ipynb` creates:
+---
 
-- A SageMaker Pipeline named `model-quality-monitoring-pipeline`
-- One SageMaker Processing step named `ModelQualityMonitoring`
-- MLflow runs containing classification metrics and Evidently model quality artifacts
+## Viewing Results in MLflow
 
-The model quality processor expects:
+### Access MLflow UI
 
-- Predictions CSV with a `prediction` column
-- Optional prediction probability column named `prediction_proba`
-- Ground truth CSV with a `target` column
+1. Open **SageMaker Studio**
+2. Navigate to **MLflow** panel in left sidebar
+3. Click on your MLflow App (e.g., `DefaultMLFlowApp`)
+4. Find experiment: `test-monitor-pipeline`
 
-The rows must line up. Row 1 in the predictions file must refer to the same record as row 1 in the ground truth file. In production, join predictions and labels by a stable record ID before running model quality.
+### Exploring Runs
 
-It logs:
+![MLflow Data Drift Runs](images/output_monitoring_mlflow_runs_dataDrift.png)
 
-- `Accuracy`
-- `Precision`
-- `Recall`
-- `F1Score`
-- `ROC_AUC` when a probability column is available
-- Evidently model quality HTML and JSON reports
-- `model_quality_summary.json`
+Each run contains:
+- **Metrics Tab**: All numeric drift and quality metrics
+- **Parameters Tab**: Data sources, timestamps, configuration
+- **Artifacts Tab**: HTML/JSON reports for download
 
-## Prerequisites
+### Comparing Runs
 
-- Amazon SageMaker Studio or a notebook environment with AWS credentials
-- SageMaker execution role with access to SageMaker, S3, SNS, IAM, EventBridge Scheduler, and SageMaker managed MLflow
-- SageMaker managed MLflow app, for example `DefaultMLFlowApp`
-- S3 bucket for input CSV files and monitoring artifacts
-- Python 3.10 or later
+MLflow's comparison view lets you:
+- Track drift trends over time
+- Identify which features drift most frequently
+- Correlate drift with model performance changes
+- Debug data pipeline issues
 
-The notebooks install the Python packages they need. The processing scripts install runtime packages inside the SageMaker Processing container so the sample can run without a custom image.
+![Model Quality in MLflow](images/output_monitoring_mlflow_runs_modelQuality.png)
 
-For production, use a custom processing image with pinned dependency versions. That avoids runtime package installation and makes processing jobs start faster.
+---
 
-## Basic Workflow
+## Architecture Details
 
-1. Run the experimentation notebook if you want to generate demo model artifacts and local sample files.
-2. Upload or point Notebook 2 at a baseline CSV and current CSV.
-3. Run Notebook 2 to create and test the data drift and data quality pipeline.
-4. Optionally create the EventBridge schedule in Notebook 2.
-5. When predictions and ground truth labels are available, point Notebook 3 at those files.
-6. Run Notebook 3 to create and test the model quality pipeline.
-7. Review all runs and artifacts in the configured SageMaker managed MLflow experiment.
+### Batch Monitoring Architecture
+
+![Batch Inference Architecture](images/arch-sagemaker-inference-predictiveml-monitoring-batch-inf.png)
+
+Components:
+1. **S3 Data Lakes**: Stores baseline, production, and prediction data
+2. **SageMaker Batch Transform**: Generates predictions on production data
+3. **SageMaker Processing Job**: Runs Evidently monitoring scripts
+4. **MLflow Tracking Server**: Centralized experiment tracking
+5. **Amazon SNS**: Drift alert notifications
+6. **EventBridge**: Scheduled pipeline triggers
+
+### MLOps Integration
+
+![MLOps Architecture](images/arch-sagemaker-inference-predictiveml-monitoring-mlops.png)
+
+The solution integrates with broader MLOps workflows:
+- **Model Registry**: Track model versions and metadata
+- **CI/CD Pipelines**: Automate retraining when drift exceeds thresholds
+- **A/B Testing**: Compare monitoring metrics across model versions
+- **Governance**: Audit model performance and data quality
+
+### Multi-Account Architecture
+
+![Multi-Account Architecture](images/arch-sagemaker-inference-predictiveml-monitoring-multi-mlops.png)
+
+For enterprise deployments:
+- **Development Account**: Model training and experimentation
+- **Staging Account**: Pre-production validation and testing
+- **Production Account**: Automated monitoring pipelines
+- **Cross-Account S3 Access**: Centralized data management
+- **Shared MLflow**: Unified experiment tracking across accounts
+
+---
 
 ## Cleanup
 
-<<<<<<< ours
-Each automation notebook includes cleanup cells for resources it creates.
-=======
 ### Remove Notebook 1 Resources
 
 ```python
@@ -567,18 +581,16 @@ This solution provides a complete, production-ready ML monitoring system with:
 ✅ **Proactive Alerts** - Email notifications on drift detection  
 ✅ **Scalable Architecture** - Handles large datasets with batch processing  
 ✅ **Cost Optimized** - No always-on inference endpoints  
-✅ **Enterprise Ready** - Multi-account, governance, and audit support  
->>>>>>> theirs
+✅ **Enterprise Ready** - Multi-account, governance, and audit support
 
-Notebook 2 cleanup removes:
+### Getting Help
 
-- EventBridge Scheduler schedule
-- SageMaker Pipeline
-- SNS topic
-- Scheduler IAM role
+- For SageMaker issues: [AWS Support](https://aws.amazon.com/support/)
+- For Evidently questions: [Evidently Community](https://github.com/evidentlyai/evidently/discussions)
+- For MLflow issues: [MLflow Documentation](https://mlflow.org/docs/latest/index.html)
 
-Notebook 3 cleanup removes:
+---
 
-- SageMaker Pipeline
+**Happy Monitoring!** 🎉
 
-MLflow runs and S3 artifacts are intentionally preserved unless you delete them separately.
+For questions or feedback, please open an issue in the repository.
