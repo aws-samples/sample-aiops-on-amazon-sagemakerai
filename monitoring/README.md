@@ -5,7 +5,7 @@ This folder contains seven comprehensive monitoring solutions for different ML/A
 ## Available Solutions
 
 ### 1. [Predictive ML Batch Monitoring Pipeline](./predictiveml-batch-monitoring-pipeline/)
-<- **Monitoring solution** for implementing production-ready batch ML monitoring on Amazon SageMaker AI: experimentation notebook for learning fundamentals, an automated pipeline notebook for data drift and data quality operations, and a separate model quality example notebook for cases where predictions and ground truth labels are available.
+- **Monitoring solution** for implementing production-ready batch ML monitoring on Amazon SageMaker AI: experimentation notebook for learning fundamentals, an automated pipeline notebook for data drift and data quality operations, and a separate model quality example notebook for cases where predictions and ground truth labels are available.
 - **Data Drift Detection**: Statistical comparison of current vs. baseline data distributions using Evidently AI's DataDriftPreset with automatic threshold-based alerting.
 - **Data Quality Checks**: Missing values, duplicate rows, row counts, and Evidently data summary reports logged to MLflow.
 - **Separate Model Quality Tracking**: Binary classification performance metrics (Accuracy, Precision, Recall, F1, AUC) are handled in a third notebook when predictions and ground truth labels are available.
@@ -61,20 +61,6 @@ Referral README for the real-time flavor of the [amazon-sagemaker-from-idea-to-p
 
 ## Choosing the Right Monitoring Solution
 
-<<<<<<< HEAD
-| Criteria | Batch Monitoring | Real-Time Inference | LLM Monitoring | Resource Monitoring |
-|----------|------------------|---------------------|----------------|---------------------|
-| **Use Case** | Periodic batch monitoring | Always-on endpoint inference | LLM endpoint evaluation | Infrastructure & cost tracking |
-| **Inference Type** | Batch files, optional Batch Transform in experimentation | Real-time endpoint | Real-time endpoint | Real-time endpoint |
-| **Deployment** | Educational (3 notebooks) | Production-ready (full pipeline) | Production CDK | Grafana dashboard |
-| **Data Storage** | S3 CSV files | Athena data lake (Iceberg) | S3 Data Capture | CloudWatch Metrics |
-| **Monitoring Focus** | Data drift + data quality, optional model quality notebook | Drift + performance + ground truth | GenAI evaluations | GPU/CPU/memory + cost |
-| **Metrics Granularity** | Per-batch run | Per-inference request | Per-inference request | 10-second intervals |
-| **Alerting** | SNS email | SNS email + MLflow | Step Functions | Grafana alerts |
-| **Best For** | Learning ML monitoring | Production fraud detection | LLM safety/quality | Multi-model cost optimization |
-| **Setup Time** | 30-45 minutes | 2-3 hours | 1-2 hours | 15-30 minutes |
-| **Infrastructure** | SageMaker Pipeline | SageMaker + Lambda + Athena | CDK Serverless | Managed Grafana |
-=======
 | Criteria | Batch Monitoring | Endpoint Monitoring | Real-Time + Evidently/SNS | Real-Time Inference | LLM Inference Monitoring | Resource Monitoring | LLM Quality Monitoring |
 |----------|------------------|---------------------|---------------------------|---------------------|--------------------------|---------------------|------------------------|
 | **Use Case** | Periodic batch predictions | Real-time endpoint drift | Real-time endpoint drift alerts | Always-on endpoint inference | LLM endpoint evaluation | Infrastructure & cost tracking | LLM output quality scoring |
@@ -87,4 +73,3 @@ Referral README for the real-time flavor of the [amazon-sagemaker-from-idea-to-p
 | **Best For** | Learning ML monitoring | Real-time endpoint with CDK scale | Learning real-time monitoring on top of an existing workshop | Production fraud detection | LLM safety/quality (event-driven) | Multi-model cost optimization | LLM quality regression detection |
 | **Setup Time** | 30-45 minutes | 45-60 minutes | Runs inside the workshop notebook | 2-3 hours | 1-2 hours | 15-30 minutes | 15-30 minutes |
 | **Infrastructure** | SageMaker Pipeline | CDK Lambda + EventBridge | SageMaker AI Pipeline + EventBridge Scheduler + SNS | SageMaker + Lambda + Athena | CDK Serverless | Managed Grafana | Managed Grafana + CloudWatch |
->>>>>>> upstream/main
