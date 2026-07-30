@@ -25,7 +25,7 @@ The agent under evaluation is built with the **Strands Agents SDK** and runs aga
 
 ## Prerequisites
 
-- Python 3.10+
+- Python 3.12+
 - An [MLflow App](https://aws.amazon.com/blogs/aws/accelerate-ai-development-using-amazon-sagemaker-ai-with-serverless-mlflow/) on Amazon SageMaker AI (serverless MLflow)
 - Access to Anthropic Claude Sonnet 4.6 on Amazon Bedrock (used as the judge and simulated-user model)
 - AWS credentials with `sagemaker:InvokeEndpoint` and `bedrock:InvokeModel` permissions
