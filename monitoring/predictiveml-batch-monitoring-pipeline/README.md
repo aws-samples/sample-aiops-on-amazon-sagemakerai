@@ -150,12 +150,10 @@ Learn the fundamentals of ML monitoring by interactively running each component 
 ### Workflow
 
 #### 1. Setup and Configuration
-```python
-# The notebook automatically configures:
-# - SageMaker session and IAM role
-# - MLflow tracking URI pointing to your MLflow App
-# - S3 paths for data and artifacts
-```
+The notebook automatically configures:
+- SageMaker session and IAM role
+- MLflow tracking URI pointing to your MLflow App
+- S3 paths for data and artifacts
 
 #### 2. Train Model with MLflow Tracking
 - Downloads bank marketing dataset from UCI repository
@@ -496,31 +494,27 @@ For enterprise deployments:
 ## Cleanup
 
 ### Remove Notebook 1 Resources
+In predictive_ml_experimentation_data_model_monitoring_evidently.ipynb
+Run the cleanup section (Section 10)
 
 ```python
-# In predictive_ml_experimentation_data_model_monitoring_evidently.ipynb
-# Run the cleanup section (Section 10)
-
 # Delete SageMaker model
 sm_client.delete_model(ModelName=model_name)
-
-# Note: MLflow runs and S3 data are preserved for audit
 ```
+
+Note: MLflow runs and S3 data are preserved for audit
 
 ### Remove Notebook 2 Resources
+In batch_monitoring_pipeline.ipynb
+Run the cleanup section (Section 10)
 
-```python
-# In batch_monitoring_pipeline.ipynb
-# Run the cleanup section (Section 10)
+This will remove:
+- EventBridge scheduled rule
+- SageMaker Pipeline
+- SNS topic and subscriptions
+- IAM roles for EventBridge
 
-# This will remove:
-# - EventBridge scheduled rule
-# - SageMaker Pipeline
-# - SNS topic and subscriptions
-# - IAM roles for EventBridge
-
-# MLflow runs and S3 data are preserved
-```
+MLflow runs and S3 data are preserved
 
 ### Complete Cleanup (Optional)
 
@@ -529,10 +523,10 @@ To remove all traces:
 ```bash
 # Delete S3 data
 aws s3 rm s3://your-bucket/monitoring-pipeline/ --recursive
-
-# Delete MLflow experiment (from MLflow UI or API)
-# Note: This is usually NOT recommended as it removes historical data
 ```
+
+Delete MLflow experiment (from MLflow UI or API)
+Note: This is usually NOT recommended as it removes historical data
 
 ---
 
