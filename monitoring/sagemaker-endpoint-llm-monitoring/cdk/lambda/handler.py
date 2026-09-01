@@ -117,6 +117,47 @@ def parse_data_capture_record(record: Dict) -> Dict:
 
     return parsed_record
 
+def should_skip_record(parsed_record: Dict) -> str:
+    """
+    Check if a parsed record should be skipped (not logged as a trace).
+    Returns a reason string if skipped, empty string if should be processed.
+
+    Skips:
+    1. Intermediate tool-call rounds (finish_reason == "tool_calls")
+    2. Empty /no_think responses (content is only whitespace or empty)
+    """
+    response = parsed_record.get('response', {})
+    if not isinstance(response, dict):
+        return ''
+
+    choices = response.get('choices', [])
+    if not choices:
+        return 'no choices in response'
+
+    choice = choices[0]
+
+    # Skip tool-call rounds
+    finish_reason = choice.get('finish_reason', '')
+    if finish_reason == 'tool_calls':
+        return 'tool_calls round'
+    stop_reason = choice.get('stop_reason', '')
+    if stop_reason == 'tool_calls':
+        return 'tool_calls round (stop_reason)'
+
+    # Skip if has tool_calls but no meaningful content
+    message = choice.get('message', {})
+    has_tool_calls = bool(message.get('tool_calls'))
+    content = message.get('content', '')
+
+    if has_tool_calls and (not content or not content.strip()):
+        return 'tool_calls with empty content'
+
+    # Skip empty /no_think responses (content is only whitespace, newlines, or empty)
+    if content is not None and not content.strip():
+        return 'empty response (likely /no_think intermediate round)'
+
+    return ''
+
 
 def log_trace_to_mlflow(event_data: Dict, s3_file_key: str) -> None:
     """
@@ -151,9 +192,24 @@ def log_trace_to_mlflow(event_data: Dict, s3_file_key: str) -> None:
     # Create trace with span
     # Use event_id as request_id for idempotency - prevents duplicate traces on retry
     with mlflow.start_span(name=s3_file_key) as span:
-        # Set inputs
+        # Set inputs — extract user message from messages array (Qwen3/Strands format)
+        prompt = ''
+        if isinstance(input_data, dict):
+            messages = input_data.get('messages', [])
+            for msg in messages:
+                if msg.get('role') == 'user':
+                    content = msg.get('content', '')
+                    if isinstance(content, list):
+                        parts = [p.get('text', '') for p in content if isinstance(p, dict)]
+                        prompt = ' '.join(parts) if parts else str(content)
+                    else:
+                        prompt = content
+            # Fallback to 'inputs' key if no messages found
+            if not prompt:
+                prompt = input_data.get('inputs', str(input_data))
+
         span.set_inputs({
-            "prompt": input_data.get('inputs', ''),
+            "prompt": prompt,
             "parameters": input_data.get('parameters', {})
         })
 
@@ -164,8 +220,16 @@ def log_trace_to_mlflow(event_data: Dict, s3_file_key: str) -> None:
         if is_error:
             span.set_status("ERROR")
 
-        # Set outputs
-        span.set_outputs(output_data)
+        # Set outputs — extract assistant message from choices array (Qwen3 format)
+        response_text = ''
+        if isinstance(output_data, dict):
+            choices = output_data.get('choices', [])
+            if choices:
+                response_text = choices[0].get('message', {}).get('content', '')
+        if response_text:
+            span.set_outputs({"response": response_text})
+        else:
+            span.set_outputs(output_data)
 
     logger.info(f'Logged trace for event {event_id}')
 
@@ -245,6 +309,12 @@ def lambda_handler(event: Dict, context: Any) -> Dict:
 
                 parsed_record = parse_data_capture_record(record)
 
+                # Skip tool-call rounds and empty /no_think responses
+                skip_reason = should_skip_record(parsed_record)
+                if skip_reason:
+                    logger.info(f"Skipping record {parsed_record.get('event_id')}: {skip_reason}")
+                    continue
+
                 # Log trace to MLflow
                 log_trace_to_mlflow(parsed_record, s3_key)
 
@@ -306,7 +376,8 @@ def run_evaluations(s3_file_key: str) -> None:
             """Approximate words in the response"""
             try:
                 if isinstance(outputs, dict):
-                    words = len(outputs.get('generated_text', '').split())
+                    text = outputs.get('response', '') or outputs.get('generated_text', '')
+                    words = len(text.split())
                 else:
                     words = len(str(outputs).split())
             except:

@@ -1,0 +1,8 @@
+sagemaker==2.253.1
+mlflow>=3.15.1
+pydantic-core<2.34
+sagemaker-mlflow==0.2.0
+litellm==1.81.1
+sacrebleu==2.6.0
+rouge_score==0.1.2
+deepeval==3.8.1
