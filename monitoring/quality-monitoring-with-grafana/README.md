@@ -1,6 +1,6 @@
-# LLM Quality Monitoring with CloudWatch and Grafana
+# LLM Quality Monitoring with Amazon CloudWatch and Amazon Managed Grafana
 
-Grafana dashboards for LLM quality monitoring on SageMaker Inference Components, using [MLflow GenAI Evaluations](https://mlflow.org/docs/latest/genai/eval-monitor/) and Bedrock Claude as an LLM-as-judge scorer. Quality scores are published as custom CloudWatch metrics and visualized in auto-refreshing Grafana dashboards.
+Grafana dashboards for LLM quality monitoring on Amazon SageMaker AI inference components, using [MLflow GenAI Evaluations](https://mlflow.org/docs/latest/genai/eval-monitor/) and Claude via Amazon Bedrock as an LLM-as-judge scorer. Quality scores are published as custom CloudWatch metrics and visualized in auto-refreshing Grafana dashboards.
 
 This builds on the [Resource Monitoring with Grafana](../resource-monitoring-grafana) example — extending it from infrastructure metrics to LLM output quality metrics.
 
@@ -35,7 +35,7 @@ Each rule uses a query → reduce → threshold expression chain (the format Gra
 
 ![Grafana Alert Rules](images/panel_4_alerts.png)
 
-The notebook also auto-enables **unified alerting** on the workspace if it's off. AMG workspaces can ship with this disabled, in which case alert rules are accepted by the API but never evaluated. Enabling it triggers a one-time workspace restart (~5 minutes).
+The notebook also auto-enables **unified alerting** on the workspace if it's off. Amazon Managed Grafana workspaces can ship with this disabled, in which case alert rules are accepted by the API but never evaluated. Enabling it triggers a one-time workspace restart (~5 minutes).
 
 ### Notifications via SNS
 
@@ -81,11 +81,15 @@ The rule transitions Pending → Firing after `for: 5m` elapses, and an email la
 
 ## Prerequisites
 
-- An active SageMaker AI endpoint with one or more inference components
-- A SageMaker Managed MLflow App (MLflow 3.4+) — used for tracing and judge orchestration
-- Bedrock model access for the LLM judge (default: Claude Sonnet 4 via cross-region inference)
-- IAM Identity Center (SSO) configured in the account — used by Amazon Managed Grafana
-- The caller's AWS credentials must have `cloudwatch:PutMetricData`, `bedrock:InvokeModel`, and the IAM permissions needed to create a Grafana workspace + role
+- An active Amazon SageMaker AI endpoint with one or more inference components
+- An Amazon SageMaker AI Managed MLflow App (MLflow 3.4+) — used for tracing and judge orchestration
+- Amazon Bedrock model access for the LLM judge (default: Claude Sonnet 4.6 via cross-region inference)
+- AWS IAM Identity Center (SSO) configured in the account — used by Amazon Managed Grafana
+- The caller's AWS credentials must have `cloudwatch:PutMetricData`, `bedrock:InvokeModel`, and the IAM permissions needed to create an Amazon Managed Grafana workspace and IAM role
+
+## Cost
+
+Running this sample creates billable AWS resources. You will incur charges for the Amazon Managed Grafana workspace, Amazon CloudWatch log groups and custom metrics, and (if `ALERT_NOTIFICATION_EMAIL` is set) an Amazon SNS topic. Follow the [Clean up](#clean-up) section to delete the resources and stop charges when you are finished.
 
 ## Configuration
 
@@ -93,7 +97,7 @@ Open `llm_quality_monitoring_cloudwatch_grafana.ipynb` and edit the **EDIT THESE
 
 | Variable | Description |
 |---|---|
-| `ENDPOINT_NAME` | Your SageMaker endpoint name |
+| `ENDPOINT_NAME` | Your SageMaker AI endpoint name |
 | `INFERENCE_COMPONENT_1` / `_2` | Names of the two inference components on the endpoint |
 | `INFERENCE_COMPONENT_1_LABEL` / `_2_LABEL` | Friendly labels for each IC (used in dashboards) |
 | `MLFLOW_TRACKING_APP_URI` | ARN of your MLflow App (`arn:aws:sagemaker:<region>:<account>:mlflow-app/<app-id>`) |
@@ -107,16 +111,16 @@ Run the notebook end-to-end. It will:
 
 1. Create a CloudWatch Log Group per inference component
 2. Run a small batch of test prompts through each IC
-3. Score each response with MLflow's built-in `Safety`, `RelevanceToQuery`, and `Guidelines` scorers (Bedrock Claude as judge)
+3. Score each response with MLflow's built-in `Safety`, `RelevanceToQuery`, and `Guidelines` scorers (Claude via Amazon Bedrock as judge)
 4. Publish quality metrics to CloudWatch
-5. Create or reuse an Amazon Managed Grafana workspace and ensure unified alerting is enabled (workspace restart if it isn't)
+5. Create or reuse an Amazon Managed Grafana workspace and enable unified alerting if it isn't already enabled (workspace restart applies)
 6. Deploy the dashboard, alert rules, and (optionally) the SNS notification path
 
 The notebook is idempotent — re-running it updates existing resources rather than duplicating them.
 
 ## Quality Metrics Tracked
 
-The notebook publishes the following metrics to CloudWatch under the `SageMaker/InferenceQuality` namespace, dimensioned by `EndpointName`, `InferenceComponentName`, and `InferenceComponentLabel`:
+The notebook publishes the following metrics to CloudWatch under the `SageMaker AI/InferenceQuality` namespace, dimensioned by `EndpointName`, `InferenceComponentName`, and `InferenceComponentLabel`:
 
 | Metric | What it shows |
 |---|---|
@@ -128,20 +132,39 @@ The notebook publishes the following metrics to CloudWatch under the `SageMaker/
 
 > MLflow's built-in `Safety`, `RelevanceToQuery`, and `Guidelines` scorers return boolean Feedback, so per-inference scores are 0 or 1. The composite score is a 0–1 mean across the three dimensions.
 
+## Clean up
+
+When you are finished with the sample, run **Step 14: Clean Up Resources** at the end of the notebook to delete the AWS resources it created and stop incurring charges. Step 14 deletes:
+
+- The 3 Amazon Managed Grafana alert rules and the `LLM Quality Alerts` folder
+- The Amazon SNS contact point and notification-policy route (if Step 12 ran)
+- The Grafana dashboard and the `CloudWatch-Quality` data source
+- The Amazon SNS topic and email subscriptions (if Step 12 ran)
+- The `GrafanaSNSPublish` inline IAM policy on the Grafana workspace role
+- The Amazon CloudWatch log groups created in Step 2
+
+Step 14 leaves the Amazon Managed Grafana workspace and the `AmazonGrafanaCloudWatchRole` IAM role in place by default, since they are typically shared with other samples in this repository. To delete the workspace as well, set `DELETE_WORKSPACE = True` in the cleanup cell before running it. CloudWatch metric data ages out automatically per the standard CloudWatch retention schedule and does not need to be deleted explicitly.
+
+> ⚠️ **Data loss warning.** Deleting the CloudWatch log groups permanently removes the prompt and response text logged during the run. If you need that data for audit or compliance, export it to Amazon S3 (via a CloudWatch Logs subscription or `aws logs create-export-task`) before running the cleanup cell.
+
 ## Architecture
 
 ```
-SageMaker Inference Component
+Amazon SageMaker AI Inference Component
         ↓
   Invoke endpoint
         ↓
-  Log to CloudWatch Logs  ──→  MLflow Tracking (traces + evals)
+  Log to Amazon CloudWatch Logs  ──→  MLflow Tracking (traces + evals)
         ↓
-  Bedrock Claude (LLM-as-judge)
+  Claude via Amazon Bedrock (LLM-as-judge)
         ↓
-  Publish custom metrics to CloudWatch
+  Publish custom metrics to Amazon CloudWatch
         ↓
-  Grafana dashboard (auto-refresh)
+  Amazon Managed Grafana dashboard (auto-refresh)
         ↓
-  Grafana alerts (threshold-based)  ──→  SNS topic  ──→  Email subscribers
+  Amazon Managed Grafana alerts (threshold-based)  ──→  Amazon SNS topic  ──→  Email subscribers
 ```
+
+## Conclusion
+
+This sample combines Amazon SageMaker AI inference components, Amazon CloudWatch, and Amazon Managed Grafana into a single observability layer that monitors both the operational health of your inference infrastructure and the output quality of the deployed LLMs. Quality scores from the LLM-as-judge pattern are published as custom CloudWatch metrics, visualized in Grafana dashboards, and surfaced as threshold-based alerts that can route to email through Amazon SNS. To adopt the pattern in your own environment, edit the configuration cell in the notebook, run the steps end-to-end, and tune the alert thresholds and judge-model criteria for your use case. Run **Step 14: Clean Up Resources** when you are done to delete the resources this sample created.
