@@ -1,0 +1,87 @@
+[
+  {
+    "inputs": {
+      "question": "What is Claude Sonnet 4.6's context window?"
+    },
+    "expectations": {
+      "expected_response": "1,000,000 tokens",
+      "expected_source": "claude-sonnet-4-6.md"
+    }
+  },
+  {
+    "inputs": {
+      "question": "Which embedding model is recommended for Bedrock KBs on S3 Vectors?"
+    },
+    "expectations": {
+      "expected_response": "Titan Text Embeddings V2",
+      "expected_source": "titan-embeddings-v2.md"
+    }
+  },
+  {
+    "inputs": {
+      "question": "How much does Claude Sonnet 4.6 cost in us-east-1?"
+    },
+    "expectations": {
+      "expected_tool": "get_pricing",
+      "expected_tool_args": {
+        "model_id": "us.anthropic.claude-sonnet-4-6",
+        "region": "us-east-1"
+      }
+    }
+  },
+  {
+    "inputs": {
+      "question": "What regions is Bedrock available in?"
+    },
+    "expectations": {
+      "expected_response": "us-east-1, us-west-2, eu-west-1, ap-northeast-1",
+      "expected_source": "bedrock-regions.md"
+    }
+  },
+  {
+    "inputs": {
+      "question": "Who is the CEO of Amazon?"
+    },
+    "expectations": {
+      "expected_response": "I don't know"
+    }
+  },
+  {
+    "inputs": {
+      "question": "How much does Claude Sonnet 4.6 cost for our Ireland team?"
+    },
+    "expectations": {
+      "expected_tool": "get_pricing",
+      "expected_tool_args": {
+        "model_id": "eu.anthropic.claude-sonnet-4-6",
+        "region": "eu-west-1"
+      }
+    }
+  },
+  {
+    "inputs": {
+      "question": "What's the difference between Titan Embeddings v2 and Cohere Embed v3 for Bedrock KBs on S3 Vectors?"
+    },
+    "expectations": {
+      "expected_source": "titan-embeddings-v2.md"
+    }
+  },
+  {
+    "inputs": {
+      "question": "In one answer, give me both Claude Sonnet 4.6's context window and its US inference profile ID, and cite the source file."
+    },
+    "expectations": {
+      "expected_response": "1,000,000-token context window and the US inference profile ID us.anthropic.claude-sonnet-4-6",
+      "expected_source": "claude-sonnet-4-6.md"
+    }
+  },
+  {
+    "inputs": {
+      "question": "Does Amazon S3 Vectors support hybrid search for Bedrock Knowledge Bases?"
+    },
+    "expectations": {
+      "expected_response": "No. Amazon S3 Vectors does not support hybrid search; it is best suited for semantic search.",
+      "expected_source": "bedrock-s3-vectors.md"
+    }
+  }
+]

@@ -10,7 +10,9 @@ Everything runs on AWS: MLflow 3.10.1 on Amazon SageMaker AI MLflow Apps provide
 
 ## Contents
 
-- `evaluation-driven-development-with-mlflow.ipynb` — the end-to-end companion notebook (self-contained; the demo corpus is defined inline).
+- `evaluation-driven-development-with-mlflow.ipynb` — the end-to-end companion notebook (the demo corpus is defined inline).
+- `eval_records.json` — the nine-record evaluation dataset the notebook loads in section 10 (`inputs` plus `expectations` per record).
+- `requirements.txt` — Python dependencies.
 
 ## What the notebook covers
 
@@ -26,7 +28,7 @@ Everything runs on AWS: MLflow 3.10.1 on Amazon SageMaker AI MLflow Apps provide
 
 ## Prerequisites
 
-- An AWS account with permissions for Amazon Bedrock, Amazon S3 (including Amazon S3 Vectors), AWS Identity and Access Management (IAM, to create a Knowledge Base execution role), and Amazon SageMaker AI.
+- An AWS account with permissions for Amazon Bedrock, Amazon S3 (including Amazon S3 Vectors), AWS Identity and Access Management (IAM, to create a Knowledge Base execution role), and Amazon SageMaker AI (including `sagemaker:CreatePresignedMlflowAppUrl`, which the notebook uses to print a link to the MLflow UI).
 - An Amazon SageMaker AI MLflow App. If you don't have one, follow the [SageMaker AI MLflow Apps setup guide](https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow.html) and copy its ARN into the notebook's Configuration cell.
 - Access in your Region to the Amazon Bedrock models the notebook uses: the OpenAI gpt-oss-120b and gpt-oss-20b generators, the Claude Sonnet 4.6 judge, and Amazon Titan Text Embeddings V2.
 - Python 3.10 or later, with AWS credentials configured in the environment (an Amazon SageMaker Studio notebook, or local Jupyter with credentials set up).
@@ -39,7 +41,7 @@ Everything runs on AWS: MLflow 3.10.1 on Amazon SageMaker AI MLflow Apps provide
    pip install -r requirements.txt
    ```
 
-2. Open `evaluation-driven-development-with-mlflow.ipynb`.
+2. Open `evaluation-driven-development-with-mlflow.ipynb` from this folder (the notebook reads `eval_records.json` from its working directory).
 
 3. In the **Configuration** cell, set `MLFLOW_TRACKING_URI` (or edit `TRACKING_URI`) to your SageMaker AI MLflow App ARN. The Region and account ID are derived from the ARN, so it is the only value you need to provide.
 
@@ -47,7 +49,7 @@ Everything runs on AWS: MLflow 3.10.1 on Amazon SageMaker AI MLflow Apps provide
 
 ## Cost and clean up
 
-This notebook creates billable resources — an Amazon S3 source bucket, Amazon S3 Vectors storage, an Amazon Bedrock Knowledge Base, and an IAM role — and makes Amazon Bedrock API and embedding calls. The notebook's final cell deletes these resources; run it when you are finished to stop ongoing storage charges. Deletion is permanent and cannot be undone, so back up anything you need to keep first.
+This notebook creates billable resources — an Amazon S3 source bucket, Amazon S3 Vectors storage, an Amazon Bedrock Knowledge Base, and an IAM role — and makes Amazon Bedrock API and embedding calls. The notebook's final cell deletes these resources; run it when you are finished to stop ongoing storage charges. Knowledge Base deletion is asynchronous, so the cell waits for it to finish, and it can be re-run to complete a partial clean-up. Deletion is permanent and cannot be undone, so back up anything you need to keep first.
 
 ## Security
 
