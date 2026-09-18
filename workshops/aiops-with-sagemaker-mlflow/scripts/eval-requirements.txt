@@ -1,0 +1,19 @@
+absl-py>=2.2.0
+accelerate>=1.5.2
+aiohttp>=3.11.14
+boto3>=1.37.18
+evaluate>=0.4.3
+ipykernel>=6.29.5
+mlflow>=3.3.2 # 
+nltk>=3.9.1
+pandas>=2.2.3
+peft==0.17.1
+psutil>=7.0.0 # used by mlflow for system metrics
+pynvml>=12.0.0 # used by mlflow for system metrics
+rouge-score>=0.1.2
+sagemaker>=2.242.0
+sagemaker-mlflow>=0.1.0 # used by sagemaker to reference mlflow tracking server via ARN
+textstat>=0.7.5
+tiktoken>=0.9.0
+torch>=2.6.0
+transformers>=4.56.0 # required for qwen3
